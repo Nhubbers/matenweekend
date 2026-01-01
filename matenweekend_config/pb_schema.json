@@ -1,0 +1,264 @@
+[
+    {
+        "name": "users",
+        "type": "auth",
+        "system": false,
+        "schema": [
+            {
+                "name": "isAdmin",
+                "type": "bool",
+                "required": false,
+                "options": {}
+            }
+        ],
+        "options": {
+            "allowEmailAuth": true,
+            "allowOAuth2Auth": false,
+            "allowUsernameAuth": true,
+            "minPasswordLength": 8,
+            "requireEmail": true
+        },
+        "listRule": "@request.auth.id != \"\"",
+        "viewRule": "@request.auth.id != \"\"",
+        "createRule": "",
+        "updateRule": "id = @request.auth.id",
+        "deleteRule": null
+    },
+    {
+        "name": "activities",
+        "type": "base",
+        "system": false,
+        "schema": [
+            {
+                "name": "title",
+                "type": "text",
+                "required": true,
+                "options": {
+                    "min": 1,
+                    "max": 200
+                }
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "required": false,
+                "options": {
+                    "max": 2000
+                }
+            },
+            {
+                "name": "start_time",
+                "type": "date",
+                "required": true,
+                "options": {}
+            },
+            {
+                "name": "creator",
+                "type": "relation",
+                "required": true,
+                "options": {
+                    "collectionId": "_pb_users_auth_",
+                    "cascadeDelete": false,
+                    "maxSelect": 1,
+                    "displayFields": ["username"]
+                }
+            },
+            {
+                "name": "status",
+                "type": "select",
+                "required": true,
+                "options": {
+                    "maxSelect": 1,
+                    "values": ["open", "completed", "cancelled"]
+                }
+            },
+            {
+                "name": "points_participant",
+                "type": "number",
+                "required": true,
+                "options": {
+                    "min": 0
+                }
+            },
+            {
+                "name": "points_creator",
+                "type": "number",
+                "required": true,
+                "options": {
+                    "min": 0
+                }
+            },
+            {
+                "name": "max_participants",
+                "type": "number",
+                "required": false,
+                "options": {
+                    "min": 0
+                }
+            },
+            {
+                "name": "image",
+                "type": "file",
+                "required": false,
+                "options": {
+                    "maxSelect": 1,
+                    "maxSize": 5242880,
+                    "mimeTypes": [
+                        "image/jpeg",
+                        "image/png",
+                        "image/webp",
+                        "image/gif"
+                    ],
+                    "thumbs": ["100x100", "400x300"]
+                }
+            }
+        ],
+        "listRule": "@request.auth.id != \"\"",
+        "viewRule": "@request.auth.id != \"\"",
+        "createRule": "@request.auth.id != \"\"",
+        "updateRule": "creator = @request.auth.id || @request.auth.isAdmin = true",
+        "deleteRule": "@request.auth.isAdmin = true"
+    },
+    {
+        "name": "participations",
+        "type": "base",
+        "system": false,
+        "schema": [
+            {
+                "name": "activity",
+                "type": "relation",
+                "required": true,
+                "options": {
+                    "collectionId": "activities",
+                    "cascadeDelete": true,
+                    "maxSelect": 1,
+                    "displayFields": ["title"]
+                }
+            },
+            {
+                "name": "user",
+                "type": "relation",
+                "required": true,
+                "options": {
+                    "collectionId": "_pb_users_auth_",
+                    "cascadeDelete": true,
+                    "maxSelect": 1,
+                    "displayFields": ["username"]
+                }
+            }
+        ],
+        "indexes": [
+            "CREATE UNIQUE INDEX idx_unique_participation ON participations (activity, user)"
+        ],
+        "listRule": "@request.auth.id != \"\"",
+        "viewRule": "@request.auth.id != \"\"",
+        "createRule": "@request.auth.id != \"\"",
+        "updateRule": null,
+        "deleteRule": "user = @request.auth.id || @request.auth.isAdmin = true"
+    },
+    {
+        "name": "point_transactions",
+        "type": "base",
+        "system": false,
+        "schema": [
+            {
+                "name": "user",
+                "type": "relation",
+                "required": true,
+                "options": {
+                    "collectionId": "_pb_users_auth_",
+                    "cascadeDelete": false,
+                    "maxSelect": 1,
+                    "displayFields": ["username"]
+                }
+            },
+            {
+                "name": "amount",
+                "type": "number",
+                "required": true,
+                "options": {}
+            },
+            {
+                "name": "reason",
+                "type": "text",
+                "required": true,
+                "options": {
+                    "max": 500
+                }
+            },
+            {
+                "name": "activity",
+                "type": "relation",
+                "required": false,
+                "options": {
+                    "collectionId": "activities",
+                    "cascadeDelete": false,
+                    "maxSelect": 1,
+                    "displayFields": ["title"]
+                }
+            },
+            {
+                "name": "awarded_by",
+                "type": "relation",
+                "required": false,
+                "options": {
+                    "collectionId": "_pb_users_auth_",
+                    "cascadeDelete": false,
+                    "maxSelect": 1,
+                    "displayFields": ["username"]
+                }
+            },
+            {
+                "name": "type",
+                "type": "select",
+                "required": true,
+                "options": {
+                    "maxSelect": 1,
+                    "values": ["participation", "creation", "bonus", "deduction"]
+                }
+            }
+        ],
+        "listRule": "@request.auth.id != \"\"",
+        "viewRule": "@request.auth.id != \"\"",
+        "createRule": "@request.auth.isAdmin = true",
+        "updateRule": null,
+        "deleteRule": null
+    },
+    {
+        "name": "news",
+        "type": "base",
+        "system": false,
+        "schema": [
+            {
+                "name": "title",
+                "type": "text",
+                "required": true,
+                "options": {
+                    "max": 200
+                }
+            },
+            {
+                "name": "body",
+                "type": "editor",
+                "required": true,
+                "options": {}
+            },
+            {
+                "name": "author",
+                "type": "relation",
+                "required": true,
+                "options": {
+                    "collectionId": "_pb_users_auth_",
+                    "cascadeDelete": false,
+                    "maxSelect": 1,
+                    "displayFields": ["username"]
+                }
+            }
+        ],
+        "listRule": "@request.auth.id != \"\"",
+        "viewRule": "@request.auth.id != \"\"",
+        "createRule": "@request.auth.isAdmin = true",
+        "updateRule": "@request.auth.isAdmin = true",
+        "deleteRule": "@request.auth.isAdmin = true"
+    }
+]
