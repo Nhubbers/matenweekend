@@ -1,264 +1,377 @@
 [
     {
+        "id": "_pb_users_auth_",
         "name": "users",
         "type": "auth",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "isAdmin",
                 "type": "bool",
                 "required": false,
+                "presentable": false,
+                "unique": false,
                 "options": {}
             }
         ],
+        "indexes": [],
+        "listRule": "@request.auth.id != \"\"",
+        "viewRule": "@request.auth.id != \"\"",
+        "createRule": "",
+        "updateRule": "id = @request.auth.id",
+        "deleteRule": null,
         "options": {
             "allowEmailAuth": true,
             "allowOAuth2Auth": false,
             "allowUsernameAuth": true,
             "minPasswordLength": 8,
-            "requireEmail": true
-        },
-        "listRule": "@request.auth.id != \"\"",
-        "viewRule": "@request.auth.id != \"\"",
-        "createRule": "",
-        "updateRule": "id = @request.auth.id",
-        "deleteRule": null
+            "requireEmail": true,
+            "onlyVerified": false,
+            "manageRule": null
+        }
     },
     {
+        "id": "pbc_activities01",
         "name": "activities",
         "type": "base",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "title",
                 "type": "text",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "min": 1,
-                    "max": 200
+                    "max": 200,
+                    "pattern": ""
                 }
             },
             {
                 "name": "description",
                 "type": "text",
                 "required": false,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "max": 2000
+                    "min": null,
+                    "max": 2000,
+                    "pattern": ""
                 }
             },
             {
                 "name": "start_time",
                 "type": "date",
                 "required": true,
-                "options": {}
+                "presentable": false,
+                "unique": false,
+                "options": {
+                    "min": "",
+                    "max": ""
+                }
             },
             {
                 "name": "creator",
                 "type": "relation",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "collectionId": "_pb_users_auth_",
                     "cascadeDelete": false,
+                    "minSelect": null,
                     "maxSelect": 1,
-                    "displayFields": ["username"]
+                    "displayFields": [
+                        "username"
+                    ]
                 }
             },
             {
                 "name": "status",
                 "type": "select",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "maxSelect": 1,
-                    "values": ["open", "completed", "cancelled"]
+                    "values": [
+                        "open",
+                        "completed",
+                        "cancelled"
+                    ]
                 }
             },
             {
                 "name": "points_participant",
                 "type": "number",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "min": 0
+                    "min": 0,
+                    "max": null,
+                    "noDecimal": false
                 }
             },
             {
                 "name": "points_creator",
                 "type": "number",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "min": 0
+                    "min": 0,
+                    "max": null,
+                    "noDecimal": false
                 }
             },
             {
                 "name": "max_participants",
                 "type": "number",
                 "required": false,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "min": 0
+                    "min": 0,
+                    "max": null,
+                    "noDecimal": false
                 }
             },
             {
                 "name": "image",
                 "type": "file",
                 "required": false,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "maxSelect": 1,
-                    "maxSize": 5242880,
                     "mimeTypes": [
                         "image/jpeg",
                         "image/png",
                         "image/webp",
                         "image/gif"
                     ],
-                    "thumbs": ["100x100", "400x300"]
+                    "thumbs": [
+                        "100x100",
+                        "400x300"
+                    ],
+                    "maxSelect": 1,
+                    "maxSize": 5242880,
+                    "protected": false
                 }
             }
         ],
+        "indexes": [],
         "listRule": "@request.auth.id != \"\"",
         "viewRule": "@request.auth.id != \"\"",
         "createRule": "@request.auth.id != \"\"",
         "updateRule": "creator = @request.auth.id || @request.auth.isAdmin = true",
-        "deleteRule": "@request.auth.isAdmin = true"
+        "deleteRule": "@request.auth.isAdmin = true",
+        "options": {}
     },
     {
+        "id": "pbc_participation1",
         "name": "participations",
         "type": "base",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "activity",
                 "type": "relation",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "collectionId": "activities",
+                    "collectionId": "pbc_activities01",
                     "cascadeDelete": true,
+                    "minSelect": null,
                     "maxSelect": 1,
-                    "displayFields": ["title"]
+                    "displayFields": [
+                        "title"
+                    ]
                 }
             },
             {
                 "name": "user",
                 "type": "relation",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "collectionId": "_pb_users_auth_",
                     "cascadeDelete": true,
+                    "minSelect": null,
                     "maxSelect": 1,
-                    "displayFields": ["username"]
+                    "displayFields": [
+                        "username"
+                    ]
                 }
             }
         ],
         "indexes": [
-            "CREATE UNIQUE INDEX idx_unique_participation ON participations (activity, user)"
+            "CREATE UNIQUE INDEX `idx_unique_participation` ON `participations` (`activity`, `user`)"
         ],
         "listRule": "@request.auth.id != \"\"",
         "viewRule": "@request.auth.id != \"\"",
         "createRule": "@request.auth.id != \"\"",
         "updateRule": null,
-        "deleteRule": "user = @request.auth.id || @request.auth.isAdmin = true"
+        "deleteRule": "user = @request.auth.id || @request.auth.isAdmin = true",
+        "options": {}
     },
     {
+        "id": "pbc_pointtransact1",
         "name": "point_transactions",
         "type": "base",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "user",
                 "type": "relation",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "collectionId": "_pb_users_auth_",
                     "cascadeDelete": false,
+                    "minSelect": null,
                     "maxSelect": 1,
-                    "displayFields": ["username"]
+                    "displayFields": [
+                        "username"
+                    ]
                 }
             },
             {
                 "name": "amount",
                 "type": "number",
                 "required": true,
-                "options": {}
+                "presentable": false,
+                "unique": false,
+                "options": {
+                    "min": null,
+                    "max": null,
+                    "noDecimal": false
+                }
             },
             {
                 "name": "reason",
                 "type": "text",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "max": 500
+                    "min": null,
+                    "max": 500,
+                    "pattern": ""
                 }
             },
             {
                 "name": "activity",
                 "type": "relation",
                 "required": false,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "collectionId": "activities",
+                    "collectionId": "pbc_activities01",
                     "cascadeDelete": false,
+                    "minSelect": null,
                     "maxSelect": 1,
-                    "displayFields": ["title"]
+                    "displayFields": [
+                        "title"
+                    ]
                 }
             },
             {
                 "name": "awarded_by",
                 "type": "relation",
                 "required": false,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "collectionId": "_pb_users_auth_",
                     "cascadeDelete": false,
+                    "minSelect": null,
                     "maxSelect": 1,
-                    "displayFields": ["username"]
+                    "displayFields": [
+                        "username"
+                    ]
                 }
             },
             {
                 "name": "type",
                 "type": "select",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "maxSelect": 1,
-                    "values": ["participation", "creation", "bonus", "deduction"]
+                    "values": [
+                        "participation",
+                        "creation",
+                        "bonus",
+                        "deduction"
+                    ]
                 }
             }
         ],
+        "indexes": [],
         "listRule": "@request.auth.id != \"\"",
         "viewRule": "@request.auth.id != \"\"",
         "createRule": "@request.auth.isAdmin = true",
         "updateRule": null,
-        "deleteRule": null
+        "deleteRule": null,
+        "options": {}
     },
     {
+        "id": "pbc_news000000001",
         "name": "news",
         "type": "base",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "title",
                 "type": "text",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
-                    "max": 200
+                    "min": null,
+                    "max": 200,
+                    "pattern": ""
                 }
             },
             {
                 "name": "body",
                 "type": "editor",
                 "required": true,
-                "options": {}
+                "presentable": false,
+                "unique": false,
+                "options": {
+                    "convertUrls": false
+                }
             },
             {
                 "name": "author",
                 "type": "relation",
                 "required": true,
+                "presentable": false,
+                "unique": false,
                 "options": {
                     "collectionId": "_pb_users_auth_",
                     "cascadeDelete": false,
+                    "minSelect": null,
                     "maxSelect": 1,
-                    "displayFields": ["username"]
+                    "displayFields": [
+                        "username"
+                    ]
                 }
             }
         ],
+        "indexes": [],
         "listRule": "@request.auth.id != \"\"",
         "viewRule": "@request.auth.id != \"\"",
         "createRule": "@request.auth.isAdmin = true",
         "updateRule": "@request.auth.isAdmin = true",
-        "deleteRule": "@request.auth.isAdmin = true"
+        "deleteRule": "@request.auth.isAdmin = true",
+        "options": {}
     }
 ]
