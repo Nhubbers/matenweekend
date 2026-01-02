@@ -1,0 +1,187 @@
+---
+# Matenweekend Server Setup Playbook
+# Run with: ansible-playbook -i inventory.ini playbook.yml
+
+- name: Setup Matenweekend Server
+  hosts: matenweekend
+  become: yes
+  vars:
+    project_dir: /opt/matenweekend
+    domain: matenweekend.nl
+    timezone: Europe/Amsterdam
+    
+  tasks:
+    # ==========================================
+    # System Setup
+    # ==========================================
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone }}"
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - git
+          - sqlite3
+          - unzip
+          - htop
+          - ufw
+        state: present
+
+    # ==========================================
+    # Docker Installation
+    # ==========================================
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_installed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Install Docker
+      shell: curl -fsSL https://get.docker.com | sh
+      when: docker_installed.rc != 0
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    # ==========================================
+    # Firewall Setup
+    # ==========================================
+    - name: Configure UFW - Allow SSH
+      ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Configure UFW - Allow HTTP
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Configure UFW - Allow HTTPS
+      ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        policy: deny
+
+    # ==========================================
+    # Project Directory Setup
+    # ==========================================
+    - name: Create project directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ project_dir }}"
+        - "{{ project_dir }}/pb_data"
+        - "{{ project_dir }}/pb_hooks"
+        - "{{ project_dir }}/pb_migrations"
+        - /opt/backups
+
+    # ==========================================
+    # Copy Configuration Files
+    # ==========================================
+    - name: Copy docker-compose.yml
+      copy:
+        src: files/docker-compose.yml
+        dest: "{{ project_dir }}/docker-compose.yml"
+        mode: '0644'
+
+    - name: Copy Caddyfile
+      template:
+        src: templates/Caddyfile.j2
+        dest: "{{ project_dir }}/Caddyfile"
+        mode: '0644'
+
+    - name: Copy PocketBase hooks
+      copy:
+        src: files/main.pb.js
+        dest: "{{ project_dir }}/pb_hooks/main.pb.js"
+        mode: '0644'
+
+    - name: Copy PocketBase schema
+      copy:
+        src: files/pb_schema.json
+        dest: "{{ project_dir }}/pb_schema.json"
+        mode: '0644'
+
+    - name: Copy backup script
+      copy:
+        src: files/backup.sh
+        dest: "{{ project_dir }}/backup.sh"
+        mode: '0755'
+
+    # ==========================================
+    # Start Services
+    # ==========================================
+    - name: Pull Docker images
+      command: docker compose pull
+      args:
+        chdir: "{{ project_dir }}"
+
+    - name: Start Docker containers
+      command: docker compose up -d
+      args:
+        chdir: "{{ project_dir }}"
+
+    # ==========================================
+    # Backup Cron Job
+    # ==========================================
+    - name: Setup backup cron job
+      cron:
+        name: "Matenweekend daily backup"
+        minute: "0"
+        hour: "3"
+        job: "{{ project_dir }}/backup.sh >> /var/log/backup.log 2>&1"
+
+    # ==========================================
+    # Wait for Services
+    # ==========================================
+    - name: Wait for PocketBase to be ready
+      uri:
+        url: "http://localhost:8080/api/health"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 30
+      delay: 5
+      ignore_errors: yes
+
+    # ==========================================
+    # Output Info
+    # ==========================================
+    - name: Display completion message
+      debug:
+        msg: |
+          
+          ========================================
+          Matenweekend Server Setup Complete!
+          ========================================
+          
+          URLs:
+          - Main App: https://{{ domain }}
+          - PocketBase Admin: https://{{ domain }}/_/
+          - Portainer: https://portainer.{{ domain }}
+          
+          Next Steps:
+          1. Wait a few minutes for SSL certificates
+          2. Go to https://{{ domain }}/_/ to create admin account
+          3. Import pb_schema.json via Settings -> Import collections
+          
+          ========================================

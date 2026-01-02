@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    container_name: pocketbase
+    restart: unless-stopped
+    volumes:
+      - ./pb_data:/pb_data
+      - ./pb_hooks:/pb_hooks
+      - ./pb_migrations:/pb_migrations
+    expose:
+      - 8080
+    command: serve --http=0.0.0.0:8080
+    networks:
+      - matenweekend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: ghcr.io/${GITHUB_USERNAME:-placeholder}/matenweekend-frontend:latest
+    container_name: frontend
+    restart: unless-stopped
+    expose:
+      - 80
+    networks:
+      - matenweekend
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - pocketbase
+    networks:
+      - matenweekend
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    expose:
+      - 9000
+    networks:
+      - matenweekend
+
+networks:
+  matenweekend:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  portainer_data:

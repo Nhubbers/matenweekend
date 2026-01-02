@@ -1,0 +1,22 @@
+# Terraform Variables Template
+# Copy this to terraform.tfvars and fill in your values
+
+# Required: Hetzner Cloud API Token
+# Get it from: https://console.hetzner.cloud/ -> Project -> Security -> API Tokens
+hcloud_token = "your-hetzner-api-token"
+
+# Required: Your SSH public key
+ssh_public_key = "ssh-rsa AAAA... your-email@example.com"
+
+# Optional: Path to your SSH private key (for Ansible provisioning)
+ssh_private_key_path = "~/.ssh/id_rsa"
+
+# Optional: Cloudflare API Token for automatic DNS management
+# Leave empty to manage DNS manually
+cloudflare_api_token = ""
+cloudflare_zone_id   = ""
+
+# Server configuration
+domain          = "matenweekend.nl"
+server_type     = "cpx11"   # cpx11 = 2 vCPU, 2GB RAM (~€4.35/mo)
+server_location = "fsn1"    # fsn1 = Falkenstein, nbg1 = Nuremberg, hel1 = Helsinki

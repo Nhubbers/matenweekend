@@ -1,0 +1,10 @@
+# Ansible
+*.retry
+
+# Secrets (if any)
+vault_password.txt
+secrets.yml
+
+# OS
+.DS_Store
+Thumbs.db
