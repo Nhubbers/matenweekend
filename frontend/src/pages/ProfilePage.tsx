@@ -1,12 +1,14 @@
 import { PageContainer } from '@/components/layout';
 import { Avatar, LoadingSpinner, ErrorMessage } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
+import { pb } from '@/lib/pocketbase';
 import { useUserTransactions, useRanking } from '@/hooks/useRanking';
+import type { User } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
 import { nl } from '@/lib/translations';
 
 export function ProfilePage() {
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
     const { transactions, totalPoints, loading, error } = useUserTransactions(user?.id);
     const { rankings } = useRanking();
 
@@ -17,7 +19,32 @@ export function ProfilePage() {
             <h1 className="text-2xl font-bold mb-4">{nl.profile}</h1>
 
             <div className="flex flex-col items-center mb-6">
-                <Avatar user={user || undefined} size="lg" />
+                <div className="relative group">
+                    <Avatar user={user || undefined} size="lg" />
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                        <span className="text-white text-xs">Wijzigen</span>
+                        <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file || !user) return;
+
+                                try {
+                                    const formData = new FormData();
+                                    formData.append('avatar', file);
+
+                                    const updatedUser = await pb.collection('users').update<User>(user.id, formData);
+                                    updateUser(updatedUser);
+                                } catch (err) {
+                                    console.error('Failed to update avatar:', err);
+                                    alert('Kon profielfoto niet uploaden. Probeer het later opnieuw.');
+                                }
+                            }}
+                        />
+                    </label>
+                </div>
                 <h2 className="text-xl font-bold mt-3">{user?.name || user?.email}</h2>
                 <p className="text-base-content/70">{user?.email}</p>
 
