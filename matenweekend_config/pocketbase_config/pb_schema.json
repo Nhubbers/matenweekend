@@ -787,7 +787,7 @@
     "listRule": "@request.auth.id != \"\"",
     "viewRule": "@request.auth.id != \"\"",
     "createRule": "@request.auth.id != \"\"",
-    "updateRule": "creator = @request.auth.id",
+    "updateRule": "creator = @request.auth.id || @request.auth.isAdmin = true",
     "deleteRule": "@request.auth.isAdmin = true",
     "name": "activities",
     "type": "base",
@@ -1049,7 +1049,7 @@
     "viewRule": "@request.auth.id != \"\"",
     "createRule": "@request.auth.id != \"\"",
     "updateRule": null,
-    "deleteRule": "user = @request.auth.id",
+    "deleteRule": "user = @request.auth.id || @request.auth.isAdmin = true",
     "name": "participations",
     "type": "base",
     "fields": [
