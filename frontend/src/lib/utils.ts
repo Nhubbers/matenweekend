@@ -16,6 +16,16 @@ export function formatDateFull(dateString: string): string {
 }
 
 // Format relative time (e.g., "2 uur geleden")
+// Format date for datetime-local input (YYYY-MM-DDTHH:mm)
+export function formatDateForInput(dateString: string): string {
+    if (!dateString) return '';
+    try {
+        return format(new Date(dateString), "yyyy-MM-dd'T'HH:mm");
+    } catch {
+        return '';
+    }
+}
+
 export function formatRelativeTime(dateString: string): string {
     const date = parseISO(dateString);
     return formatDistanceToNow(date, { addSuffix: true, locale: nl });

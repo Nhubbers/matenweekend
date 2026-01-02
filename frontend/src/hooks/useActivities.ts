@@ -2,6 +2,10 @@ import { useState, useCallback, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
 import type { Activity, ActivityFilter, CreateActivityData } from '@/types';
 
+type UpdateActivityData = Partial<Pick<Activity, 'title' | 'description' | 'start_time'>> & {
+    image?: File;
+};
+
 export function useActivities(filter: ActivityFilter = 'all') {
     const [activities, setActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
@@ -72,6 +76,20 @@ export function useActivities(filter: ActivityFilter = 'all') {
         return updated;
     };
 
+    const updateActivity = async (id: string, data: UpdateActivityData) => {
+        const formData = new FormData();
+        if (data.title) formData.append('title', data.title);
+        if (data.description) formData.append('description', data.description);
+        if (data.start_time) formData.append('start_time', data.start_time);
+        if (data.image) formData.append('image', data.image);
+
+        const updated = await pb.collection('activities').update<Activity>(id, formData);
+        setActivities((prev) =>
+            prev.map((a) => (a.id === id ? { ...a, ...updated } : a))
+        );
+        return updated;
+    };
+
     const reopenActivity = async (activity: Activity) => {
         // Update status to open. 
         // Server-side hooks (main.pb.js) will handle the removal of point transactions.
@@ -91,6 +109,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         createActivity,
         getActivity,
         updateActivityStatus,
+        updateActivity,
         reopenActivity,
         deleteActivity,
     };

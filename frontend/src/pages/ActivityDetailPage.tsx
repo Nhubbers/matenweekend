@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout';
-import { ParticipantList } from '@/components/activities';
+import { ParticipantList, EditActivityModal } from '@/components/activities';
 import { LoadingSpinner, ErrorMessage, Avatar, ConfirmDialog } from '@/components/common';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +28,9 @@ export function ActivityDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [reopenConfirm, setReopenConfirm] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     const { reopenActivity } = useActivities();
 
@@ -263,65 +265,88 @@ export function ActivityDetailPage() {
                     <div className="flex flex-wrap gap-2">
                         {isOpen && (
                             <>
-                                <button
-                                    className="btn btn-success btn-sm"
-                                    onClick={handleComplete}
-                                    disabled={actionLoading}
-                                >
-                                    {nl.complete}
-                                </button>
-                                <button
-                                    className="btn btn-warning btn-sm"
-                                    onClick={handleCancel}
-                                    disabled={actionLoading}
-                                >
-                                    {nl.cancel}
-                                </button>
-                            </>
+                                <>
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => setIsEditing(true)}
+                                        disabled={actionLoading}
+                                    >
+                                        ✏️ {nl.edit}
+                                    </button>
+                                    <button
+                                        className="btn btn-success btn-sm"
+                                        onClick={handleComplete}
+                                        disabled={actionLoading}
+                                    >
+                                        {nl.complete}
+                                    </button>
+                                    <button
+                                        className="btn btn-warning btn-sm"
+                                        onClick={handleCancel}
+                                        disabled={actionLoading}
+                                    >
+                                        {nl.cancel}
+                                    </button>
+                                </>
                         )}
-                        {!isOpen && activity.status === 'completed' && (
-                            <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => setReopenConfirm(true)}
-                                disabled={actionLoading}
-                            >
-                                Heropenen
-                            </button>
-                        )}
-                        {isAdmin && (
-                            <button
-                                className="btn btn-error btn-sm"
-                                onClick={() => setDeleteConfirm(true)}
-                                disabled={actionLoading}
-                            >
-                                {nl.delete}
-                            </button>
-                        )}
+                                {!isOpen && activity.status === 'completed' && (
+                                    <button
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={() => setReopenConfirm(true)}
+                                        disabled={actionLoading}
+                                    >
+                                        Heropenen
+                                    </button>
+                                )}
+                                {isAdmin && (
+                                    <button
+                                        className="btn btn-error btn-sm"
+                                        onClick={() => setDeleteConfirm(true)}
+                                        disabled={actionLoading}
+                                    >
+                                        {nl.delete}
+                                    </button>
+                                )}
+                            </div>
                     </div>
-                </div>
             )}
 
-            <ConfirmDialog
-                isOpen={deleteConfirm}
-                title={nl.delete}
-                message={`${nl.areYouSure} "${activity.title}" verwijderen?`}
-                confirmLabel={nl.delete}
-                cancelLabel={nl.cancel}
-                onConfirm={handleDelete}
-                onCancel={() => setDeleteConfirm(false)}
-                variant="danger"
+                    <ConfirmDialog
+                        isOpen={deleteConfirm}
+                        title={nl.delete}
+                        message={`${nl.areYouSure} "${activity.title}" verwijderen?`}
+                        confirmLabel={nl.delete}
+                        cancelLabel={nl.cancel}
+                        onConfirm={handleDelete}
+                        onCancel={() => setDeleteConfirm(false)}
+                        variant="danger"
+                    />
+
+                    <ConfirmDialog
+                        isOpen={reopenConfirm}
+                        title="Activiteit Heropenen"
+                        message="Weet je het zeker? Als je heropent, worden de toegekende punten van alle deelnemers weer ingetrokken!"
+                        confirmLabel="Heropenen & Punten Intrekken"
+                        cancelLabel={nl.cancel}
+                        onConfirm={handleReopen}
+                        onCancel={() => setReopenConfirm(false)}
+                        variant="danger"
+                    />
+                    onCancel={() => setReopenConfirm(false)}
+                    variant="danger"
             />
 
-            <ConfirmDialog
-                isOpen={reopenConfirm}
-                title="Activiteit Heropenen"
-                message="Weet je het zeker? Als je heropent, worden de toegekende punten van alle deelnemers weer ingetrokken!"
-                confirmLabel="Heropenen & Punten Intrekken"
-                cancelLabel={nl.cancel}
-                onConfirm={handleReopen}
-                onCancel={() => setReopenConfirm(false)}
-                variant="danger"
-            />
-        </PageContainer>
-    );
+                    {isEditing && (
+                        <EditActivityModal
+                            activity={activity}
+                            isOpen={isEditing}
+                            onClose={() => setIsEditing(false)}
+                            onSuccess={(updated) => {
+                                setActivity({ ...activity, ...updated });
+                                setIsEditing(false);
+                            }}
+                        />
+                    )}
+                </PageContainer>
+            );
 }
