@@ -6,6 +6,7 @@ import { LoadingSpinner, ErrorMessage, Avatar, ConfirmDialog } from '@/component
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParticipations } from '@/hooks/useParticipations';
+import { useActivities } from '@/hooks/useActivities';
 import {
     formatDateFull,
     getActivityImageUrl,
@@ -20,13 +21,16 @@ import type { Activity } from '@/types';
 export function ActivityDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { isAdmin } = useAuth();
+    const { isAdmin, user } = useAuth();
 
     const [activity, setActivity] = useState<Activity | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [reopenConfirm, setReopenConfirm] = useState(false);
+
+    const { reopenActivity } = useActivities();
 
     const {
         participations,
@@ -118,6 +122,20 @@ export function ActivityDetailPage() {
         }
     };
 
+    const handleReopen = async () => {
+        if (!activity) return;
+        try {
+            setActionLoading(true);
+            const updated = await reopenActivity(activity);
+            setActivity({ ...activity, status: updated.status });
+        } catch (err) {
+            console.error('Failed to reopen:', err);
+        } finally {
+            setActionLoading(false);
+            setReopenConfirm(false);
+        }
+    };
+
     if (loading) {
         return (
             <PageContainer>
@@ -137,6 +155,9 @@ export function ActivityDetailPage() {
     }
 
     const creator = activity.expand?.creator;
+    const isCreator = user?.id === activity.creator;
+    const canManage = isAdmin || isCreator;
+
     const imageUrl = getActivityImageUrl(activity);
     const isOpen = activity.status === 'open';
     const isFull =
@@ -236,9 +257,9 @@ export function ActivityDetailPage() {
                 </div>
             )}
 
-            {isAdmin && (
+            {canManage && (
                 <div className="mt-6 space-y-2">
-                    <div className="divider">Admin</div>
+                    <div className="divider">Beheer</div>
                     <div className="flex flex-wrap gap-2">
                         {isOpen && (
                             <>
@@ -258,13 +279,24 @@ export function ActivityDetailPage() {
                                 </button>
                             </>
                         )}
-                        <button
-                            className="btn btn-error btn-sm"
-                            onClick={() => setDeleteConfirm(true)}
-                            disabled={actionLoading}
-                        >
-                            {nl.delete}
-                        </button>
+                        {!isOpen && activity.status === 'completed' && (
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setReopenConfirm(true)}
+                                disabled={actionLoading}
+                            >
+                                Heropenen
+                            </button>
+                        )}
+                        {isAdmin && (
+                            <button
+                                className="btn btn-error btn-sm"
+                                onClick={() => setDeleteConfirm(true)}
+                                disabled={actionLoading}
+                            >
+                                {nl.delete}
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -277,6 +309,17 @@ export function ActivityDetailPage() {
                 cancelLabel={nl.cancel}
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteConfirm(false)}
+                variant="danger"
+            />
+
+            <ConfirmDialog
+                isOpen={reopenConfirm}
+                title="Activiteit Heropenen"
+                message="Weet je het zeker? Als je heropent, worden de toegekende punten van alle deelnemers weer ingetrokken!"
+                confirmLabel="Heropenen & Punten Intrekken"
+                cancelLabel={nl.cancel}
+                onConfirm={handleReopen}
+                onCancel={() => setReopenConfirm(false)}
                 variant="danger"
             />
         </PageContainer>

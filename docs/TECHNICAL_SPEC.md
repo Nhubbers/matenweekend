@@ -56,6 +56,10 @@ https://matenweekend.nl/api
 - Update: `creator = @request.auth.id || @request.auth.isAdmin = true` (creator or admin)
 - Delete: `@request.auth.isAdmin = true` (admin only)
 
+**Status Workflow:**
+- `open` -> `completed`: Triggered by creator/admin. Server hook awards points.
+- `completed` -> `open` (Reopen): Triggered by creator/admin. MUST remove associated point transactions.
+
 ### 3. participations
 
 | Field | Type | Required | Notes |
