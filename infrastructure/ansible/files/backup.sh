@@ -21,7 +21,7 @@ if command -v sqlite3 &> /dev/null; then
     sqlite3 pb_data/data.db ".backup '$BACKUP_DIR/data_$DATE.db'"
     tar -czf $BACKUP_DIR/matenweekend_$DATE.tar.gz \
         -C $BACKUP_DIR data_$DATE.db \
-        -C $PROJECT_DIR pb_hooks pb_migrations Caddyfile docker-compose.yml 2>/dev/null || true
+        -C $PROJECT_DIR pb_hooks pb_migrations Caddyfile docker-compose.yml Dockerfile 2>/dev/null || true
     rm $BACKUP_DIR/data_$DATE.db
 else
     # Option 2: Stop PocketBase briefly for consistent backup
@@ -30,7 +30,7 @@ else
     
     # Backup entire pb_data directory plus config files
     tar -czf $BACKUP_DIR/matenweekend_$DATE.tar.gz \
-        pb_data pb_hooks pb_migrations Caddyfile docker-compose.yml 2>/dev/null || true
+        pb_data pb_hooks pb_migrations Caddyfile docker-compose.yml Dockerfile 2>/dev/null || true
     
     # Start pocketbase again
     docker compose start pocketbase

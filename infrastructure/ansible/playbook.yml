@@ -97,6 +97,12 @@
     # ==========================================
     # Copy Configuration Files
     # ==========================================
+    - name: Copy Dockerfile
+      copy:
+        src: files/Dockerfile
+        dest: "{{ project_dir }}/Dockerfile"
+        mode: '0644'
+
     - name: Copy docker-compose.yml
       copy:
         src: files/docker-compose.yml
@@ -130,10 +136,16 @@
     # ==========================================
     # Start Services
     # ==========================================
-    - name: Pull Docker images
-      command: docker compose pull
+    - name: Build PocketBase image
+      command: docker compose build
       args:
         chdir: "{{ project_dir }}"
+
+    - name: Pull other Docker images
+      command: docker compose pull caddy portainer
+      args:
+        chdir: "{{ project_dir }}"
+      ignore_errors: yes
 
     - name: Start Docker containers
       command: docker compose up -d

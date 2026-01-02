@@ -181,11 +181,28 @@ infrastructure/
     ├── templates/
     │   └── Caddyfile.j2    # Caddyfile template
     └── files/
+        ├── Dockerfile       # PocketBase container build
         ├── docker-compose.yml
         ├── main.pb.js       # PocketBase hooks
         ├── pb_schema.json   # Database schema
         └── backup.sh        # Backup script
 ```
+
+---
+
+## PocketBase Version
+
+We build PocketBase from a Dockerfile instead of using a pre-built image (more reliable).
+The version is set in `ansible/files/Dockerfile`:
+
+```dockerfile
+ARG PB_VERSION=0.35.0
+```
+
+To upgrade PocketBase:
+1. Change the version in the Dockerfile
+2. Redeploy: `ansible-playbook -i inventory.ini playbook.yml`
+3. Or on server: `cd /opt/matenweekend && docker compose build && docker compose up -d`
 
 ---
 
