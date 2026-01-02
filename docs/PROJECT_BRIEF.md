@@ -76,7 +76,7 @@ Build a mobile-first React web application for "Matenweekend" (Friends Weekend) 
 
 ## Important Notes
 
-1. **API Rules**: Some collections have `null` API rules in PocketBase, meaning they require superuser/admin access. The app should handle 403 errors gracefully.
+1. **API Rules configured**: All collections have proper API rules. Use `expand` on relations to get user data (e.g., `expand: 'creator'` when fetching activities).
 
 2. **Server-side hooks**: Points are awarded automatically when an activity is marked "completed" - the frontend just updates the status.
 

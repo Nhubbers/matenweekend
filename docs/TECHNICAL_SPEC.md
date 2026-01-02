@@ -24,10 +24,12 @@ https://matenweekend.nl/api
 | `updated` | autodate | Yes | Auto-set |
 
 **API Rules:**
-- List/View: `id = @request.auth.id` (users can only see themselves - use expand to get related user data)
+- List/View: `id = @request.auth.id` (users can only see themselves directly)
 - Create: Open (registration)
-- Update: `id = @request.auth.id`
-- Delete: `id = @request.auth.id`
+- Update: `id = @request.auth.id` (own profile only)
+- Delete: `id = @request.auth.id` (own account only)
+
+**Important:** To get user data for other users, always use `expand` on relations. For example, when fetching activities with `expand: 'creator'`, PocketBase includes the creator's user data even though you can't list users directly.
 
 ### 2. activities
 
@@ -48,7 +50,11 @@ https://matenweekend.nl/api
 
 **Image Thumbnails:** `100x100`, `400x300`
 
-**API Rules:** Currently `null` (superuser only) - may need adjustment
+**API Rules:**
+- List/View: `@request.auth.id != ""` (any authenticated user)
+- Create: `@request.auth.id != ""` (any authenticated user)
+- Update: `creator = @request.auth.id || @request.auth.isAdmin = true` (creator or admin)
+- Delete: `@request.auth.isAdmin = true` (admin only)
 
 ### 3. participations
 
@@ -62,7 +68,11 @@ https://matenweekend.nl/api
 
 **Indexes:** Unique constraint on `(activity, user)` - prevents double-joining
 
-**API Rules:** Currently `null` (superuser only) - may need adjustment
+**API Rules:**
+- List/View: `@request.auth.id != ""` (any authenticated user)
+- Create: `@request.auth.id != ""` (any authenticated user)
+- Update: `null` (no updates allowed)
+- Delete: `user = @request.auth.id || @request.auth.isAdmin = true` (own record or admin)
 
 ### 4. point_transactions
 
@@ -78,7 +88,11 @@ https://matenweekend.nl/api
 | `created` | autodate | Yes | Auto-set |
 | `updated` | autodate | Yes | Auto-set |
 
-**API Rules:** Currently `null` (superuser only) - may need adjustment
+**API Rules:**
+- List/View: `@request.auth.id != ""` (any authenticated user)
+- Create: `@request.auth.isAdmin = true` (admin only - regular points are created by server hooks)
+- Update: `null` (no updates - immutable audit trail)
+- Delete: `null` (no deletes - immutable audit trail)
 
 ### 5. news
 
@@ -91,7 +105,11 @@ https://matenweekend.nl/api
 | `created` | autodate | Yes | Auto-set |
 | `updated` | autodate | Yes | Auto-set |
 
-**API Rules:** Currently `null` (superuser only) - may need adjustment
+**API Rules:**
+- List/View: `@request.auth.id != ""` (any authenticated user)
+- Create: `@request.auth.isAdmin = true` (admin only)
+- Update: `@request.auth.isAdmin = true` (admin only)
+- Delete: `@request.auth.isAdmin = true` (admin only)
 
 ---
 

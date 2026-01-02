@@ -377,19 +377,19 @@ jobs:
 Add the frontend service to `/opt/matenweekend/docker-compose.yml`:
 
 ```yaml
-version: '3.8'
-
 services:
   pocketbase:
-    image: ghcr.io/muchobien/pocketbase:latest
+    # Build from Dockerfile
+    build: .
     container_name: pocketbase
     restart: unless-stopped
     volumes:
-      - ./pb_data:/pb_data
-      - ./pb_hooks:/pb_hooks
+      - ./pb_data:/pb/pb_data
+      - ./pb_hooks:/pb/pb_hooks
+      - ./pb_migrations:/pb/pb_migrations
     expose:
       - 8080
-    command: serve --http=0.0.0.0:8080
+    command: /pb/pocketbase serve --http=0.0.0.0:8080
     networks:
       - matenweekend
 
