@@ -72,6 +72,29 @@ onRecordAfterUpdateSuccess((e) => {
         });
     }
 
+    // 4. Reopening Logic: If status is set back to 'open', remove old transactions
+    if (record.get('status') === 'open') {
+        try {
+            // Find all transactions related to this activity
+            const transactions = $app.findRecordsByFilter(
+                'point_transactions',
+                "activity = '" + record.id + "'"
+            );
+
+            // Delete them to reset the state
+            transactions.forEach((tx) => {
+                $app.delete(tx);
+            });
+
+            if (transactions.length > 0) {
+                console.log('Activity reopened: Removed ' + transactions.length + ' transactions for ' + record.get('title'));
+            }
+        } catch (err) {
+            console.log('Error removing transactions on reopen: ' + err);
+        }
+        return;
+    }
+
 }, 'activities');
 
 

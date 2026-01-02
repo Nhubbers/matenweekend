@@ -73,39 +73,8 @@ export function useActivities(filter: ActivityFilter = 'all') {
     };
 
     const reopenActivity = async (activity: Activity) => {
-        // 1. Fetch all participations to know who got points
-        const participations = await pb.collection('participations').getFullList({
-            filter: `activity = "${activity.id}"`,
-        });
-
-        // 2. Create deduction for Creator (if points > 0)
-        if (activity.points_creator > 0) {
-            await pb.collection('point_transactions').create({
-                user: activity.creator,
-                amount: -activity.points_creator,
-                reason: `Activity Reopened: ${activity.title}`,
-                activity: activity.id,
-                type: 'deduction',
-            });
-        }
-
-        // 3. Create deductions for Participants (if points > 0)
-        if (activity.points_participant > 0) {
-            // Process in parallel
-            await Promise.all(
-                participations.map((p) =>
-                    pb.collection('point_transactions').create({
-                        user: p.user,
-                        amount: -activity.points_participant,
-                        reason: `Activity Reopened: ${activity.title}`,
-                        activity: activity.id,
-                        type: 'deduction',
-                    })
-                )
-            );
-        }
-
-        // 4. Update status to open
+        // Update status to open. 
+        // Server-side hooks (main.pb.js) will handle the removal of point transactions.
         return updateActivityStatus(activity.id, 'open');
     };
 
