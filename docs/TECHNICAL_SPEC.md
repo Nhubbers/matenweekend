@@ -252,10 +252,10 @@ When activity status changes to `open`:
   description: "Bring your own meat",
   start_time: "2025-06-15T14:00:00Z",
   status: "open",
-  points_participant: 10,
-  points_creator: 5,
-  max_participants: 20,  // optional, 0 = unlimited
-  image: File            // optional
+  points_participant: 10, // Fixed value
+  points_creator: 5,      // Fixed value
+  max_participants: 0,    // Hardcoded to 0 (unlimited)
+  image: File             // optional
 }
 // creator is auto-set by server hook
 ```

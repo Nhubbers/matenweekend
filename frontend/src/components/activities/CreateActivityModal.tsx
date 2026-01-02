@@ -18,9 +18,6 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
         title: '',
         description: '',
         start_time: '',
-        points_participant: 10,
-        points_creator: 5,
-        max_participants: 0,
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -54,6 +51,9 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
             await createActivity({
                 ...formData,
                 start_time: new Date(formData.start_time).toISOString(),
+                points_participant: 10,
+                points_creator: 5,
+                max_participants: 0,
                 image: imageFile || undefined,
             });
 
@@ -62,9 +62,6 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                 title: '',
                 description: '',
                 start_time: '',
-                points_participant: 10,
-                points_creator: 5,
-                max_participants: 0,
             });
             setImageFile(null);
             setImagePreview(null);
@@ -143,54 +140,7 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">{nl.pointsForParticipants} *</span>
-                            </label>
-                            <input
-                                type="number"
-                                className="input input-bordered"
-                                value={formData.points_participant}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, points_participant: parseInt(e.target.value) || 0 })
-                                }
-                                min={0}
-                                required
-                            />
-                        </div>
 
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">{nl.pointsForCreator} *</span>
-                            </label>
-                            <input
-                                type="number"
-                                className="input input-bordered"
-                                value={formData.points_creator}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, points_creator: parseInt(e.target.value) || 0 })
-                                }
-                                min={0}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text">{nl.maxParticipants} (0 = {nl.unlimited})</span>
-                        </label>
-                        <input
-                            type="number"
-                            className="input input-bordered"
-                            value={formData.max_participants}
-                            onChange={(e) =>
-                                setFormData({ ...formData, max_participants: parseInt(e.target.value) || 0 })
-                            }
-                            min={0}
-                        />
-                    </div>
 
                     <div className="form-control">
                         <label className="label">
