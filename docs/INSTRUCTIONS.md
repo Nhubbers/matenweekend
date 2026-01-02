@@ -1,4 +1,4 @@
-# Claude Code Agent Instructions
+# Code Agent Instructions
 
 ## Your Task
 
