@@ -11,14 +11,14 @@ const navItems = [
 
 export function BottomNav() {
     return (
-        <nav className="btm-nav btm-nav-md bg-base-200 border-t border-base-300">
+        <nav className="btm-nav bg-base-200 border-t border-base-300 grid grid-cols-4">
             {navItems.map((item) => (
                 <NavLink
                     key={item.to}
                     to={item.to}
                     className={({ isActive }) =>
                         cn(
-                            'flex flex-col items-center justify-center',
+                            'flex flex-col items-center justify-center text-center',
                             isActive && 'active text-primary'
                         )
                     }
