@@ -112,7 +112,7 @@ https://matenweekend.nl/api
 **API Rules:**
 - List/View: `@request.auth.id != ""` (any authenticated user)
 - Create: `@request.auth.isAdmin = true` (admin only)
-- Update: `@request.auth.isAdmin = true` (admin only)
+- Update: `author = @request.auth.id || @request.auth.isAdmin = true` (author or admin)
 - Delete: `@request.auth.isAdmin = true` (admin only)
 
 ---

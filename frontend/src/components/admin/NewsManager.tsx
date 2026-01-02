@@ -4,6 +4,7 @@ import { LoadingSpinner, ErrorMessage, ConfirmDialog } from '@/components/common
 import { formatRelativeTime } from '@/lib/utils';
 import { nl } from '@/lib/translations';
 import type { News } from '@/types';
+import { NewsForm } from '@/components/news/NewsForm';
 
 export function NewsManager() {
     const { news, loading, error, refetch, createNews, deleteNews } = useNews();
@@ -11,18 +12,10 @@ export function NewsManager() {
     const [actionLoading, setActionLoading] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState<News | null>(null);
 
-    const [title, setTitle] = useState('');
-    const [body, setBody] = useState('');
-
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title) return;
-
+    const handleCreate = async (title: string, body: string) => {
         try {
             setActionLoading(true);
             await createNews(title, body);
-            setTitle('');
-            setBody('');
             setIsCreating(false);
         } catch (err) {
             console.error('Failed to create news:', err);
@@ -70,44 +63,13 @@ export function NewsManager() {
                 </div>
 
                 {isCreating && (
-                    <form onSubmit={handleCreate} className="card bg-base-200 p-4 space-y-3">
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">{nl.title}</span>
-                            </label>
-                            <input
-                                type="text"
-                                className="input input-bordered"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">Inhoud (HTML toegestaan)</span>
-                            </label>
-                            <textarea
-                                className="textarea textarea-bordered h-24"
-                                value={body}
-                                onChange={(e) => setBody(e.target.value)}
-                                placeholder="<p>Je bericht hier...</p>"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={actionLoading || !title}
-                        >
-                            {actionLoading ? (
-                                <span className="loading loading-spinner loading-sm" />
-                            ) : (
-                                nl.create
-                            )}
-                        </button>
-                    </form>
+                    <div className="card bg-base-200 p-4">
+                        <NewsForm
+                            onSubmit={handleCreate}
+                            isLoading={actionLoading}
+                            onCancel={() => setIsCreating(false)}
+                        />
+                    </div>
                 )}
 
                 {news.length === 0 ? (
