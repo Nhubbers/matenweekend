@@ -67,6 +67,7 @@ export const nl = {
     noResults: 'Geen resultaten',
     back: 'Terug',
     save: 'Opslaan',
+    edit: 'Bewerken',
     confirm: 'Bevestigen',
     areYouSure: 'Weet je het zeker?',
     close: 'Sluiten',
