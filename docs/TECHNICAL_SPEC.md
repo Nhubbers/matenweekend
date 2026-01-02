@@ -232,6 +232,14 @@ Before creating activity:
 Before creating participation:
 - Sets `user` to current authenticated user
 
+### Hook 5: Auto-set user on participation creation
+Before creating participation:
+- Sets `user` to current authenticated user
+
+### Hook 6: Reopen Activity Cleanup
+When activity status changes to `open`:
+- Deletes all `point_transactions` associated with the activity to allow re-awarding points upon completion.
+
 ---
 
 ## Important API Behaviors

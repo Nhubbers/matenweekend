@@ -87,6 +87,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         activities,
         loading,
         error,
+        refetch: fetchActivities,
         createActivity,
         getActivity,
         updateActivityStatus,
