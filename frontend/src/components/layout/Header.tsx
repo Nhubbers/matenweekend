@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from '@/components/common';
 
 export function Header() {
     const { isAdmin } = useAuth();
@@ -13,6 +14,7 @@ export function Header() {
                 </Link>
             </div>
             <div className="flex-none gap-2">
+                <ThemeToggle />
                 {isAdmin && (
                     <Link to="/admin" className="btn btn-ghost btn-sm">
                         ⚙️ Admin
