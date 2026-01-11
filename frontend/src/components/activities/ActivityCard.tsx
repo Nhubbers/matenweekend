@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Avatar } from '@/components/common';
 import { formatDateRange, getActivityImageUrl, getDisplayName, getStatusBadgeClass, getStatusLabel, cn } from '@/lib/utils';
+import { downloadActivityIcs } from '@/lib/ics';
 import { nl } from '@/lib/translations';
 import type { Activity, Participation } from '@/types';
 
@@ -55,6 +56,16 @@ export function ActivityCard({
                     <div className="flex items-center gap-2">
                         <span>📅</span>
                         <span>{formatDateRange(activity.start_time, activity.end_time)}</span>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault(); // Prevent navigating to detail page if inside a Link
+                                downloadActivityIcs(activity);
+                            }}
+                            className="btn btn-ghost btn-xs text-primary tooltip tooltip-right px-1 min-h-0 h-6"
+                            data-tip="Zet in agenda"
+                        >
+                            + 📅
+                        </button>
                     </div>
                     <div className="flex items-center gap-2">
                         <Avatar user={creator} size="sm" />
