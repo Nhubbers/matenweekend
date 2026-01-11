@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 export function ThemeToggle() {
     const [theme, setTheme] = useState(
-        localStorage.getItem('theme') || 'bumblebee'
+        localStorage.getItem('theme') || 'light'
     );
 
     useEffect(() => {
@@ -11,7 +11,7 @@ export function ThemeToggle() {
     }, [theme]);
 
     const toggleTheme = () => {
-        setTheme(theme === 'bumblebee' ? 'night' : 'bumblebee');
+        setTheme(theme === 'light' ? 'night' : 'light');
     };
 
     return (
