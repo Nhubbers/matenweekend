@@ -9,40 +9,66 @@ interface PageContainerProps {
 }
 
 export function PageContainer({ children, className, onRefresh }: PageContainerProps) {
-    const content = (
-        <main
+    const innerContent = (
+        <div
             className={cn(
-                'flex-1 overflow-y-auto px-4 py-4 main-content',
+                'px-4 py-4 main-content',
                 'max-w-2xl mx-auto w-full',
                 className
             )}
         >
             {children}
-        </main>
+        </div>
     );
 
     if (onRefresh) {
         return (
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <PullToRefresh
-                    onRefresh={onRefresh}
-                    className="flex-1 flex flex-col overflow-y-auto"
-                    pullingContent={
-                        <div className="text-center p-4 text-gray-500 text-sm">
-                            Pull to refresh...
-                        </div>
-                    }
-                    refreshingContent={
-                        <div className="text-center p-4 text-gray-500 text-sm">
-                            Refreshing...
-                        </div>
-                    }
+            <main
+                className="flex-1 flex flex-col overflow-hidden min-h-0"
+                style={{ overscrollBehavior: 'none' }}
+            >
+                <div
+                    className="flex-1 overflow-y-auto"
+                    style={{
+                        overscrollBehavior: 'contain',
+                        WebkitOverflowScrolling: 'touch'
+                    }}
                 >
-                    {content}
-                </PullToRefresh>
-            </div>
+                    <PullToRefresh
+                        onRefresh={onRefresh}
+                        pullingContent={
+                            <div className="text-center p-4 text-gray-500 text-sm">
+                                Pull to refresh...
+                            </div>
+                        }
+                        refreshingContent={
+                            <div className="text-center p-4 text-gray-500 text-sm">
+                                Refreshing...
+                            </div>
+                        }
+                    >
+                        {innerContent}
+                    </PullToRefresh>
+                </div>
+            </main>
         );
     }
 
-    return content;
+    return (
+        <main
+            className={cn(
+                'flex-1 overflow-y-auto min-h-0',
+                'px-4 py-4 main-content',
+                'max-w-2xl mx-auto w-full'
+            )}
+            style={{
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch'
+            }}
+        >
+            <div className={className}>
+                {children}
+            </div>
+        </main>
+    );
 }
