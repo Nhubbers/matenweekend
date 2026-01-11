@@ -9,11 +9,19 @@ html,
 body {
   /* Prevent iOS Safari from showing browser controls when scrolling */
   height: 100%;
+  width: 100%;
   overflow: hidden;
   /* Use dynamic viewport height for mobile browsers */
   height: 100dvh;
   /* Prevent overscroll/bounce */
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  /* Lock the viewport to prevent any document-level scrolling */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 html {
@@ -27,9 +35,12 @@ body {
 
 #root {
   height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Prevent touch gestures from bubbling up to Safari */
+  touch-action: pan-x pan-y;
 }
 
 /* Fix for iOS safe areas */
