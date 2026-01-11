@@ -1,10 +1,14 @@
 import { RankingItem } from './RankingItem';
 import { LoadingSpinner, EmptyState, ErrorMessage } from '@/components/common';
-import { useRanking } from '@/hooks/useRanking';
+import type { UserRanking } from '@/types';
 
-export function RankingList() {
-    const { rankings, loading, error, refetch } = useRanking();
+interface RankingListProps {
+    rankings: UserRanking[];
+    loading: boolean;
+    error: string | null;
+}
 
+export function RankingList({ rankings, loading, error }: RankingListProps) {
     if (loading) {
         return (
             <div className="flex justify-center py-12">
@@ -14,7 +18,7 @@ export function RankingList() {
     }
 
     if (error) {
-        return <ErrorMessage message={error} onRetry={refetch} />;
+        return <ErrorMessage message={error} />;
     }
 
     if (rankings.length === 0) {

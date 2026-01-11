@@ -1,11 +1,15 @@
 import { NewsCard } from './NewsCard';
 import { LoadingSpinner, EmptyState, ErrorMessage } from '@/components/common';
-import { useNews } from '@/hooks/useNews';
 import { nl } from '@/lib/translations';
+import type { News } from '@/types';
 
-export function NewsList() {
-    const { news, loading, error, refetch } = useNews();
+interface NewsListProps {
+    news: News[];
+    loading: boolean;
+    error: string | null;
+}
 
+export function NewsList({ news, loading, error }: NewsListProps) {
     if (loading) {
         return (
             <div className="flex justify-center py-12">
@@ -15,7 +19,7 @@ export function NewsList() {
     }
 
     if (error) {
-        return <ErrorMessage message={error} onRetry={refetch} />;
+        return <ErrorMessage message={error} />;
     }
 
     if (news.length === 0) {

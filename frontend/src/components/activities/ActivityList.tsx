@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { ActivityCard } from './ActivityCard';
 import { LoadingSpinner, EmptyState, ErrorMessage } from '@/components/common';
-import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
 import { pb } from '@/lib/pocketbase';
 import { nl } from '@/lib/translations';
 import { cn } from '@/lib/utils';
-import type { ActivityFilter, Participation } from '@/types';
+import type { ActivityFilter, Participation, Activity } from '@/types';
 
 interface ActivityListProps {
     filter?: ActivityFilter;
     onFilterChange?: (filter: ActivityFilter) => void;
+    activities: Activity[];
+    loading: boolean;
+    error: string | null;
 }
 
 const filterOptions: { value: ActivityFilter; label: string }[] = [
@@ -19,9 +21,14 @@ const filterOptions: { value: ActivityFilter; label: string }[] = [
     { value: 'completed', label: nl.completed },
 ];
 
-export function ActivityList({ filter = 'all', onFilterChange }: ActivityListProps) {
+export function ActivityList({
+    filter = 'all',
+    onFilterChange,
+    activities,
+    loading,
+    error,
+}: ActivityListProps) {
     const { user } = useAuth();
-    const { activities, loading, error, refetch } = useActivities(filter);
     const [participationsMap, setParticipationsMap] = useState<Map<string, Participation[]>>(new Map());
     const [joinedMap, setJoinedMap] = useState<Map<string, string>>(new Map());
     const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -122,7 +129,7 @@ export function ActivityList({ filter = 'all', onFilterChange }: ActivityListPro
     }
 
     if (error) {
-        return <ErrorMessage message={error} onRetry={refetch} />;
+        return <ErrorMessage message={error} />;
     }
 
     return (
