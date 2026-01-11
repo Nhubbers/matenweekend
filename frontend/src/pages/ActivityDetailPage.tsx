@@ -206,7 +206,7 @@ export function ActivityDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <span>⭐</span>
-                    <span>{activity.points_creator} punten voor organisator</span>
+                    <span>{activity.points_creator} punten + 2 per deelnemer voor organisator</span>
                 </div>
             </div>
 

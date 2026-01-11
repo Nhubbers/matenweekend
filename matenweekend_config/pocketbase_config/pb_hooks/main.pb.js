@@ -52,33 +52,37 @@ onRecordAfterUpdateSuccess((e) => {
     const pointsCreator = record.getInt('points_creator');
     const pointsParticipant = record.getInt('points_participant');
 
+    // Fetch participants first to calculate bonus
+    // FIXED: Removed complex params object, used simple string filter
+    const participations = $app.findRecordsByFilter(
+        'participations',
+        "activity = '" + activityId + "'"
+    );
+
     // Award creator points
     if (pointsCreator > 0) {
+        const participantCount = participations.length;
+        const participantBonus = participantCount * 2;
+        const totalCreatorPoints = pointsCreator + participantBonus;
+
         const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
         const creatorTx = new Record(pointTransactions);
 
         creatorTx.set('user', creatorId);
-        creatorTx.set('amount', pointsCreator);
-        creatorTx.set('reason', 'Created: ' + activityTitle);
+        creatorTx.set('amount', totalCreatorPoints);
+        // Detailed reason showing the calculation
+        creatorTx.set('reason', 'Created: ' + activityTitle + ' (' + pointsCreator + ' + ' + participantCount + 'x2 deelnemers)');
         creatorTx.set('activity', activityId);
         creatorTx.set('type', 'creation');
 
         $app.save(creatorTx);
-        console.log('Awarded ' + pointsCreator + ' points to creator ' + creatorId);
+        console.log('Awarded ' + totalCreatorPoints + ' points to creator ' + creatorId);
     }
 
     // Award participant points
     if (pointsParticipant > 0) {
-        // FIXED: Removed complex params object, used simple string filter
-        const participations = $app.findRecordsByFilter(
-            'participations',
-            "activity = '" + activityId + "'"
-        );
-
         participations.forEach(function (p) {
             const userId = p.get('user');
-
-
 
             const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
             const tx = new Record(pointTransactions);
