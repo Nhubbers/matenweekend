@@ -55,8 +55,7 @@ onRecordAfterUpdateSuccess((e) => {
         participations.forEach(function (p) {
             const userId = p.get('user');
 
-            // Skip if participant is the creator
-            if (userId === creatorId) return;
+
 
             const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
             const tx = new Record(pointTransactions);
