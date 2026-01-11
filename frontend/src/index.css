@@ -5,6 +5,17 @@
 }
 
 /* Custom styles */
+html,
+body {
+  /* Prevent iOS Safari from showing browser controls when scrolling */
+  height: 100%;
+  overflow: hidden;
+  /* Use dynamic viewport height for mobile browsers */
+  height: 100dvh;
+  /* Prevent overscroll/bounce */
+  overscroll-behavior: none;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -12,6 +23,13 @@ html {
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Fix for iOS safe areas */

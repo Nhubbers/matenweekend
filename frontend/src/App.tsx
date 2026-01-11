@@ -14,9 +14,9 @@ import {
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-base-100">
+    <div className="h-full flex flex-col bg-base-100 overflow-hidden">
       <Header />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {children}
       </div>
       <BottomNav />
