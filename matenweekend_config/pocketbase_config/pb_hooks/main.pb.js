@@ -185,8 +185,14 @@ console.log('[Matenweekend] Hooks loaded successfully!');
 // ============================================
 // HOOK 6: Award first login bonus
 // ============================================
-onRecordAfterAuthWithPasswordRequest((e) => {
+onRecordAuthWithPasswordRequest((e) => {
+    e.next(); // Proceed with default auth behavior first
+
     const userId = e.record.id;
+    // Only check for points if auth was successful (which is implied if we reach here and e.next() doesn't throw, 
+    // but e.next() handles the response. Actually, e.next() executes the next handler. 
+    // To run logic AFTER, we should place it after e.next().
+    // However, if e.next() returns a response, we good.
 
     try {
         // Check if first login bonus already awarded
