@@ -83,7 +83,7 @@ export const nl = {
     cannotLeaveCompleted: 'Je kunt een afgeronde activiteit niet verlaten',
 
     // First login
-    welcomeTitle: 'Welkom bij Matenweekend!',
+    welcomeTitle: 'Welkom bij Matenweekend 2026!',
     firstLoginBonus: 'Je hebt 10 punten verdiend voor je eerste login!',
     letsGo: 'Lets Go!',
 };

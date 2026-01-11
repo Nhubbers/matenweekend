@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
-import type { PointTransaction, UserRanking } from '@/types';
+import type { PointTransaction, UserRanking, User } from '@/types';
 
 export function useRanking() {
     const [rankings, setRankings] = useState<UserRanking[]>([]);
@@ -12,30 +12,39 @@ export function useRanking() {
             setLoading(true);
             setError(null);
 
-            // Get all point transactions with expanded user data
-            const transactions = await pb.collection('point_transactions').getFullList<PointTransaction>({
-                expand: 'user',
-            });
+            // Fetch all users and transactions in parallel
+            const [users, transactions] = await Promise.all([
+                pb.collection('users').getFullList<User>(),
+                pb.collection('point_transactions').getFullList<PointTransaction>({
+                    expand: 'user',
+                }),
+            ]);
 
-            // Sum points per user
+            // Initialize map with all users starting at 0 points
             const pointsMap = new Map<string, UserRanking>();
 
-            transactions.forEach((tx) => {
-                const user = tx.expand?.user;
-                if (!user) return;
+            users.forEach((user) => {
+                pointsMap.set(user.id, {
+                    id: user.id,
+                    name: user.name || user.email.split('@')[0],
+                    avatar: user.avatar,
+                    totalPoints: 0,
+                    rank: 0,
+                });
+            });
 
-                const existing = pointsMap.get(user.id);
+            // Add points from transactions
+            transactions.forEach((tx) => {
+                const userId = tx.user; // Use the direct user ID reference
+                // Or safely handle if we want to rely on expand, but tx.user is safer if the user might be deleted but tx exists? 
+                // Actually, if we are iterating all users from the users collection, we only care about transactions for those users.
+
+                const existing = pointsMap.get(userId);
                 if (existing) {
                     existing.totalPoints += tx.amount || 0;
-                } else {
-                    pointsMap.set(user.id, {
-                        id: user.id,
-                        name: user.name || user.email.split('@')[0],
-                        avatar: user.avatar,
-                        totalPoints: tx.amount || 0,
-                        rank: 0,
-                    });
                 }
+                // If user doesn't exist in pointsMap (e.g. deleted user but transaction remains), we ignore or handle accordingly. 
+                // Current requirement implies showing all *active* users.
             });
 
             // Sort by points descending and assign ranks
