@@ -8,7 +8,30 @@ console.log('!!! LOADING HOOKS - START !!!');
 onRecordAfterUpdateSuccess((e) => {
     const record = e.record;
 
-    // 1. Basic check: Is the status 'completed'?
+    // 1. Handle reopening: If status is set back to 'open', remove old transactions
+    if (record.get('status') === 'open') {
+        try {
+            // Find all transactions related to this activity
+            const transactions = $app.findRecordsByFilter(
+                'point_transactions',
+                "activity = '" + record.id + "'"
+            );
+
+            // Delete them to reset the state
+            transactions.forEach((tx) => {
+                $app.delete(tx);
+            });
+
+            if (transactions.length > 0) {
+                console.log('Activity reopened: Removed ' + transactions.length + ' transactions for ' + record.get('title'));
+            }
+        } catch (err) {
+            console.log('Error removing transactions on reopen: ' + err);
+        }
+        return;
+    }
+
+    // 2. Only proceed if status is 'completed'
     if (record.get('status') !== 'completed') return;
 
     // 2. Safety: Check if we already awarded points for this activity
@@ -69,29 +92,6 @@ onRecordAfterUpdateSuccess((e) => {
             $app.save(tx);
             console.log('Awarded ' + pointsParticipant + ' points to participant ' + userId);
         });
-    }
-
-    // 4. Reopening Logic: If status is set back to 'open', remove old transactions
-    if (record.get('status') === 'open') {
-        try {
-            // Find all transactions related to this activity
-            const transactions = $app.findRecordsByFilter(
-                'point_transactions',
-                "activity = '" + record.id + "'"
-            );
-
-            // Delete them to reset the state
-            transactions.forEach((tx) => {
-                $app.delete(tx);
-            });
-
-            if (transactions.length > 0) {
-                console.log('Activity reopened: Removed ' + transactions.length + ' transactions for ' + record.get('title'));
-            }
-        } catch (err) {
-            console.log('Error removing transactions on reopen: ' + err);
-        }
-        return;
     }
 
 }, 'activities');
