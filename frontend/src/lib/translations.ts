@@ -81,6 +81,11 @@ export const nl = {
     activityClosed: 'Activiteit is niet meer open',
     alreadyJoined: 'Je doet al mee aan deze activiteit',
     cannotLeaveCompleted: 'Je kunt een afgeronde activiteit niet verlaten',
+
+    // First login
+    welcomeTitle: 'Welkom bij Matenweekend!',
+    firstLoginBonus: 'Je hebt 10 punten verdiend voor je eerste login!',
+    letsGo: 'Lets Go!',
 };
 
 export type TranslationKey = keyof typeof nl;

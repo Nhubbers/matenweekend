@@ -45,7 +45,7 @@ onRecordAfterUpdateRequest((e) => {
             0
         );
 
-        participations.forEach(function(p) {
+        participations.forEach(function (p) {
             const userId = p.get('user');
 
             // Skip if participant is the creator (they already got creator points)
@@ -153,6 +153,34 @@ onRecordBeforeCreateRequest((e) => {
     record.set('user', authRecord.id);
 
 }, 'participations');
+
+
+// ============================================
+// HOOK 6: Award first login bonus
+// ============================================
+onRecordAfterAuthWithPasswordRequest((e) => {
+    const userId = e.record.id;
+
+    // Check if first login bonus already awarded
+    const existing = $app.dao().findRecordsByFilter(
+        'point_transactions',
+        `user = '${userId}' && reason = 'First Login'`,
+        '',
+        0,
+        1
+    );
+
+    if (existing.length === 0) {
+        const pointTransactions = $app.dao().findCollectionByNameOrId('point_transactions');
+        const tx = new Record(pointTransactions);
+        tx.set('user', userId);
+        tx.set('amount', 10);
+        tx.set('reason', 'First Login');
+        tx.set('type', 'bonus');
+        $app.dao().saveRecord(tx);
+        console.log('Awarded 10 first login points to ' + userId);
+    }
+}, 'users');
 
 
 console.log('[Matenweekend] Hooks loaded successfully!');

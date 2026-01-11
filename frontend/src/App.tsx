@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header, BottomNav, ProtectedRoute } from '@/components/layout';
+import { FirstLoginModal } from '@/components/common';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LoginPage,
   HomePage,
@@ -22,9 +24,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+function AppContent() {
+  const { showFirstLoginModal, dismissFirstLoginModal } = useAuth();
+
   return (
-    <BrowserRouter>
+    <>
+      <FirstLoginModal isOpen={showFirstLoginModal} onClose={dismissFirstLoginModal} />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
@@ -88,6 +93,14 @@ export default function App() {
           }
         />
       </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }
