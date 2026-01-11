@@ -10,7 +10,7 @@ export function PageContainer({ children, className }: PageContainerProps) {
     return (
         <main
             className={cn(
-                'flex-1 overflow-y-auto px-4 py-4 pb-20',
+                'flex-1 overflow-y-auto px-4 py-4 main-content',
                 'max-w-2xl mx-auto w-full',
                 className
             )}

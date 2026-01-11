@@ -26,6 +26,11 @@ body {
   right: 0;
 }
 
+/* Main content padding to account for fixed bottom nav */
+.main-content {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
 /* Prose styles for news content */
 .prose {
   color: inherit;
