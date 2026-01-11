@@ -5,3 +5,4 @@ export { EmptyState } from './EmptyState';
 export { ConfirmDialog } from './ConfirmDialog';
 export { ThemeToggle } from './ThemeToggle';
 export { FirstLoginModal } from './FirstLoginModal';
+export { Logo } from './Logo';

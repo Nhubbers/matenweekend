@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { ThemeToggle } from '@/components/common';
+import { ThemeToggle, Logo } from '@/components/common';
 
 export function Header() {
     const { isAdmin } = useAuth();
@@ -8,8 +8,8 @@ export function Header() {
     return (
         <header className="navbar bg-base-200 border-b border-base-300 sticky top-0 z-50">
             <div className="flex-1">
-                <Link to="/" className="btn btn-ghost text-xl font-bold">
-                    <span className="text-2xl">🎉</span>
+                <Link to="/" className="btn btn-ghost text-xl font-bold gap-2">
+                    <Logo className="h-8 w-auto text-primary" />
                     <span className="hidden sm:inline">Matenweekend</span>
                 </Link>
             </div>
