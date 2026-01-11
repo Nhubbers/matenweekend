@@ -19,6 +19,7 @@ export interface Activity {
     title: string;
     description: string;
     start_time: string;
+    end_time: string;
     creator: string; // User ID
     status: 'open' | 'completed' | 'cancelled';
     points_participant: number;
@@ -105,6 +106,7 @@ export interface CreateActivityData {
     title: string;
     description: string;
     start_time: string;
+    end_time?: string;
     points_participant: number;
     points_creator: number;
     max_participants: number;

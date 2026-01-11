@@ -21,6 +21,7 @@ export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: Edit
         title: '',
         description: '',
         start_time: '',
+        end_time: '',
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: Edit
                 title: activity.title,
                 description: activity.description,
                 start_time: formatDateForInput(activity.start_time),
+                end_time: activity.end_time ? formatDateForInput(activity.end_time) : '',
             });
             // Note: we can't easily preview the existing image here as a File, 
             // but we could show the URL if we wanted. For now, we only preview NEW uploads.
@@ -63,6 +65,7 @@ export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: Edit
             const updated = await updateActivity(activity.id, {
                 ...formData,
                 start_time: new Date(formData.start_time).toISOString(),
+                end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
                 image: imageFile || undefined,
             });
 
@@ -130,17 +133,32 @@ export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: Edit
                         />
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text">{nl.dateTime} *</span>
-                        </label>
-                        <input
-                            type="datetime-local"
-                            className="input input-bordered"
-                            value={formData.start_time}
-                            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                            required
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">{nl.dateTime} *</span>
+                            </label>
+                            <input
+                                type="datetime-local"
+                                className="input input-bordered w-full"
+                                value={formData.start_time}
+                                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Eindtijd</span>
+                            </label>
+                            <input
+                                type="datetime-local"
+                                className="input input-bordered w-full"
+                                value={formData.end_time}
+                                min={formData.start_time}
+                                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-control">

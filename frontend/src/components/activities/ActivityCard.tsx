@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Avatar } from '@/components/common';
-import { formatDate, getActivityImageUrl, getDisplayName, getStatusBadgeClass, getStatusLabel, cn } from '@/lib/utils';
+import { formatDateRange, getActivityImageUrl, getDisplayName, getStatusBadgeClass, getStatusLabel, cn } from '@/lib/utils';
 import { nl } from '@/lib/translations';
 import type { Activity, Participation } from '@/types';
 
@@ -54,7 +54,7 @@ export function ActivityCard({
                 <div className="text-sm text-base-content/70 space-y-1">
                     <div className="flex items-center gap-2">
                         <span>📅</span>
-                        <span>{formatDate(activity.start_time)}</span>
+                        <span>{formatDateRange(activity.start_time, activity.end_time)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Avatar user={creator} size="sm" />

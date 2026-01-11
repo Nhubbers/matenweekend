@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useParticipations } from '@/hooks/useParticipations';
 import { useActivities } from '@/hooks/useActivities';
 import {
-    formatDateFull,
+    formatDateRange,
     getActivityImageUrl,
     getDisplayName,
     getStatusBadgeClass,
@@ -185,7 +185,7 @@ export function ActivityDetailPage() {
             <div className="space-y-2 text-base-content/80 mb-4">
                 <div className="flex items-center gap-2">
                     <span>📅</span>
-                    <span>{formatDateFull(activity.start_time)}</span>
+                    <span>{formatDateRange(activity.start_time, activity.end_time)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <Avatar user={creator} size="sm" />

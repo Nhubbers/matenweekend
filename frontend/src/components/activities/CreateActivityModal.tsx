@@ -18,6 +18,7 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
         title: '',
         description: '',
         start_time: '',
+        end_time: '',
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -47,10 +48,17 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
         setLoading(true);
         setError(null);
 
+        if (formData.end_time && new Date(formData.end_time) <= new Date(formData.start_time)) {
+            setError('Eindtijd moet na starttijd liggen');
+            setLoading(false);
+            return;
+        }
+
         try {
             await createActivity({
                 ...formData,
                 start_time: new Date(formData.start_time).toISOString(),
+                end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
                 points_participant: 10,
                 points_creator: 5,
                 max_participants: 0,
@@ -62,6 +70,7 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                 title: '',
                 description: '',
                 start_time: '',
+                end_time: '',
             });
             setImageFile(null);
             setImagePreview(null);
@@ -127,17 +136,32 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                         />
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text">{nl.dateTime} *</span>
-                        </label>
-                        <input
-                            type="datetime-local"
-                            className="input input-bordered"
-                            value={formData.start_time}
-                            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                            required
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">{nl.dateTime} *</span>
+                            </label>
+                            <input
+                                type="datetime-local"
+                                className="input input-bordered w-full"
+                                value={formData.start_time}
+                                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Eindtijd</span>
+                            </label>
+                            <input
+                                type="datetime-local"
+                                className="input input-bordered w-full"
+                                value={formData.end_time}
+                                min={formData.start_time}
+                                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                            />
+                        </div>
                     </div>
 
 

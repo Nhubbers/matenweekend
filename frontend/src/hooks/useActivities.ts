@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
 import type { Activity, ActivityFilter, CreateActivityData } from '@/types';
 
-type UpdateActivityData = Partial<Pick<Activity, 'title' | 'description' | 'start_time'>> & {
+type UpdateActivityData = Partial<Pick<Activity, 'title' | 'description' | 'start_time' | 'end_time'>> & {
     image?: File;
 };
 
@@ -48,6 +48,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         formData.append('title', data.title);
         formData.append('description', data.description);
         formData.append('start_time', data.start_time);
+        if (data.end_time) formData.append('end_time', data.end_time);
         formData.append('status', 'open');
         formData.append('points_participant', data.points_participant.toString());
         formData.append('points_creator', data.points_creator.toString());
@@ -81,6 +82,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         if (data.title) formData.append('title', data.title);
         if (data.description) formData.append('description', data.description);
         if (data.start_time) formData.append('start_time', data.start_time);
+        if (data.end_time) formData.append('end_time', data.end_time);
         if (data.image) formData.append('image', data.image);
 
         const updated = await pb.collection('activities').update<Activity>(id, formData);

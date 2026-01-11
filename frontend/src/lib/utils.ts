@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns';
+import { format, formatDistanceToNow, isAfter, parseISO, isSameDay } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { pb } from './pocketbase';
 import type { Activity, User } from '@/types';
@@ -7,6 +7,22 @@ import type { Activity, User } from '@/types';
 export function formatDate(dateString: string): string {
     const date = parseISO(dateString);
     return format(date, 'd MMM yyyy, HH:mm', { locale: nl });
+}
+
+// Format a date range
+export function formatDateRange(startDateString: string, endDateString?: string): string {
+    if (!endDateString) {
+        return formatDate(startDateString);
+    }
+
+    const startDate = parseISO(startDateString);
+    const endDate = parseISO(endDateString);
+
+    if (isSameDay(startDate, endDate)) {
+        return `${format(startDate, 'd MMM yyyy, HH:mm', { locale: nl })} - ${format(endDate, 'HH:mm', { locale: nl })}`;
+    }
+
+    return `${format(startDate, 'd MMM yyyy, HH:mm', { locale: nl })} - ${format(endDate, 'd MMM yyyy, HH:mm', { locale: nl })}`;
 }
 
 // Format a date string with full weekday
