@@ -4,6 +4,8 @@ import { FirstLoginModal } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LoginPage,
+  ForgotPasswordPage,
+  ConfirmPasswordResetPage,
   HomePage,
   ActivitiesPage,
   ActivityDetailPage,
@@ -32,6 +34,8 @@ function AppContent() {
       <FirstLoginModal isOpen={showFirstLoginModal} onClose={dismissFirstLoginModal} />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/confirm-password-reset/:token" element={<ConfirmPasswordResetPage />} />
         <Route
           path="/"
           element={

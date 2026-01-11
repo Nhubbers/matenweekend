@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { nl } from '@/lib/translations';
 import LoginBg from '@/assets/login-bg.jpg';
@@ -25,7 +25,7 @@ export function LoginPage() {
 
         try {
             await login(email, password);
-        } catch (err) {
+        } catch {
             setError(nl.loginError);
         } finally {
             setLoading(false);
@@ -96,6 +96,11 @@ export function LoginPage() {
                                 autoComplete="current-password"
                                 placeholder="••••••••"
                             />
+                            <label className="label">
+                                <Link to="/forgot-password" className="label-text-alt link link-hover text-primary">
+                                    {nl.forgotPassword}
+                                </Link>
+                            </label>
                         </div>
 
                         <button

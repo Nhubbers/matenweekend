@@ -13,6 +13,18 @@ export const nl = {
     email: 'E-mail',
     password: 'Wachtwoord',
     loginError: 'Inloggen mislukt. Controleer je gegevens.',
+    forgotPassword: 'Wachtwoord vergeten?',
+    resetPassword: 'Wachtwoord resetten',
+    requestResetLink: 'Reset link aanvragen',
+    backToLogin: 'Terug naar inloggen',
+    emailSent: 'E-mail verzonden!',
+    checkEmail: 'Controleer je e-mail voor de reset link.',
+    newPassword: 'Nieuw wachtwoord',
+    confirmPassword: 'Bevestig wachtwoord',
+    passwordResetSuccess: 'Wachtwoord succesvol gewijzigd',
+    passwordResetError: 'Wachtwoord resetten mislukt',
+    passwordsDoNotMatch: 'Wachtwoorden komen niet overeen',
+    passwordMinLength: 'Wachtwoord moet minimaal 8 tekens lang zijn',
 
     // Activities
     newActivity: 'Nieuwe activiteit',

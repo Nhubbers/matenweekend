@@ -1,4 +1,6 @@
 export { LoginPage } from './LoginPage';
+export { ForgotPasswordPage } from './ForgotPasswordPage';
+export { ConfirmPasswordResetPage } from './ConfirmPasswordResetPage';
 export { HomePage } from './HomePage';
 export { ActivitiesPage } from './ActivitiesPage';
 export { ActivityDetailPage } from './ActivityDetailPage';
