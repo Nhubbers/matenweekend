@@ -15,6 +15,7 @@ import {
     getStatusLabel,
     cn,
 } from '@/lib/utils';
+import { downloadActivityIcs } from '@/lib/ics';
 import { nl } from '@/lib/translations';
 import type { Activity } from '@/types';
 
@@ -186,6 +187,13 @@ export function ActivityDetailPage() {
                 <div className="flex items-center gap-2">
                     <span>📅</span>
                     <span>{formatDateRange(activity.start_time, activity.end_time)}</span>
+                    <button
+                        onClick={() => downloadActivityIcs(activity)}
+                        className="btn btn-ghost btn-xs text-primary tooltip tooltip-right"
+                        data-tip="Zet in agenda"
+                    >
+                        + 📅
+                    </button>
                 </div>
                 <div className="flex items-center gap-2">
                     <Avatar user={creator} size="sm" />
