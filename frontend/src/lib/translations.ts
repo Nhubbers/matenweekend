@@ -30,7 +30,7 @@ export const nl = {
     newActivity: 'Nieuwe activiteit',
     title: 'Titel',
     description: 'Beschrijving',
-    dateTime: 'Datum en tijd',
+    dateTime: 'Begindatum en -tijd',
     join: 'Deelnemen',
     leave: 'Verlaten',
     participants: 'deelnemers',
