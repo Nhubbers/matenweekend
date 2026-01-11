@@ -180,3 +180,33 @@ onRecordCreateRequest((e) => {
 
 
 console.log('[Matenweekend] Hooks loaded successfully!');
+
+
+// ============================================
+// HOOK 6: Award first login bonus
+// ============================================
+onRecordAfterAuthWithPasswordRequest((e) => {
+    const userId = e.record.id;
+
+    try {
+        // Check if first login bonus already awarded
+        const existing = $app.findRecordsByFilter(
+            'point_transactions',
+            `user = '${userId}' && reason = 'First Login'`
+        );
+
+        if (existing.length === 0) {
+            const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
+            const tx = new Record(pointTransactions);
+            tx.set('user', userId);
+            tx.set('amount', 10);
+            tx.set('reason', 'First Login');
+            tx.set('type', 'bonus');
+
+            $app.save(tx);
+            console.log('Awarded 10 first login points to ' + userId);
+        }
+    } catch (err) {
+        console.log('Error checking first login bonus: ' + err);
+    }
+}, 'users');
