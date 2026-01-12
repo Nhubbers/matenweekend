@@ -26,7 +26,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
             }
 
             const result = await pb.collection('activities').getFullList<Activity>({
-                sort: '-start_time',
+                sort: 'start_time',
                 expand: 'creator',
                 filter: filterQuery || undefined,
             });
