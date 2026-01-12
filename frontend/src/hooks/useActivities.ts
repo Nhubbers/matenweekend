@@ -52,6 +52,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         formData.append('status', 'open');
         formData.append('points_participant', data.points_participant.toString());
         formData.append('points_creator', data.points_creator.toString());
+        formData.append('points_organizer_per_participant', data.points_organizer_per_participant.toString());
         formData.append('max_participants', data.max_participants.toString());
 
         if (data.image) {
