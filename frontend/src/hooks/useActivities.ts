@@ -17,10 +17,11 @@ export function useActivities(filter: ActivityFilter = 'all') {
             setError(null);
 
             let filterQuery = '';
-            const now = new Date().toISOString();
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
             if (filter === 'upcoming') {
-                filterQuery = `start_time > "${now}" && status = "open"`;
+                filterQuery = `start_time >= "${startOfToday}" && status = "open"`;
             } else if (filter === 'completed') {
                 filterQuery = 'status = "completed" || status = "cancelled"';
             }
