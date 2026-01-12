@@ -32,7 +32,7 @@ export function ActivityDetailPage() {
     const [reopenConfirm, setReopenConfirm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    const { reopenActivity } = useActivities();
+    const { reopenActivity, completeActivity } = useActivities();
 
     const {
         participations,
@@ -88,7 +88,7 @@ export function ActivityDetailPage() {
         if (!activity) return;
         try {
             setActionLoading(true);
-            await pb.collection('activities').update(activity.id, { status: 'completed' });
+            await completeActivity(activity);
             setActivity({ ...activity, status: 'completed' });
         } catch (err) {
             console.error('Failed to complete:', err);

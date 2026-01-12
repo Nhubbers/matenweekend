@@ -7,7 +7,7 @@ import { nl } from '@/lib/translations';
 import type { Activity, Participation } from '@/types';
 
 export function AdminActivityList() {
-    const { activities, loading, error, refetch, updateActivityStatus, updateActivity, deleteActivity } = useActivities('all');
+    const { activities, loading, error, refetch, updateActivityStatus, updateActivity, deleteActivity, completeActivity } = useActivities('all');
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<Activity | null>(null);
     const [participationsMap, setParticipationsMap] = useState<Map<string, Participation[]>>(new Map());
@@ -45,7 +45,10 @@ export function AdminActivityList() {
     const handleComplete = async (id: string) => {
         try {
             setActionLoading(id);
-            await updateActivityStatus(id, 'completed');
+            const activity = activities.find(a => a.id === id);
+            if (activity) {
+                await completeActivity(activity);
+            }
         } catch (err) {
             console.error('Failed to complete activity:', err);
         } finally {

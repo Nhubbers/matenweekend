@@ -94,6 +94,17 @@ export function useActivities(filter: ActivityFilter = 'all') {
         return updated;
     };
 
+    const completeActivity = async (activity: Activity) => {
+        const now = new Date();
+        const endTime = activity.end_time ? new Date(activity.end_time) : new Date(activity.start_time);
+
+        if (endTime > now) {
+            throw new Error('Kan activiteit niet afronden omdat deze nog niet is afgelopen.');
+        }
+
+        return updateActivityStatus(activity.id, 'completed');
+    };
+
     const reopenActivity = async (activity: Activity) => {
         // Update status to open. 
         // Server-side hooks (main.pb.js) will handle the removal of point transactions.
@@ -114,6 +125,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         getActivity,
         updateActivityStatus,
         updateActivity,
+        completeActivity,
         reopenActivity,
         deleteActivity,
     };
