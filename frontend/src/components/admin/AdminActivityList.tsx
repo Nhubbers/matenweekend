@@ -1,14 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { pb } from '@/lib/pocketbase';
 import { useActivities } from '@/hooks/useActivities';
 import { LoadingSpinner, ErrorMessage, ConfirmDialog } from '@/components/common';
 import { formatDate, getStatusBadgeClass, getStatusLabel, cn } from '@/lib/utils';
 import { nl } from '@/lib/translations';
-import type { Activity } from '@/types';
+import type { Activity, Participation } from '@/types';
 
 export function AdminActivityList() {
     const { activities, loading, error, refetch, updateActivityStatus, updateActivity, deleteActivity } = useActivities('all');
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<Activity | null>(null);
+    const [participationsMap, setParticipationsMap] = useState<Map<string, Participation[]>>(new Map());
+
+    // Fetch participations for all activities
+    useEffect(() => {
+        const fetchParticipations = async () => {
+            if (activities.length === 0) return;
+
+            const activityIds = activities.map((a) => a.id);
+            const filterQuery = activityIds.map((id) => `activity = "${id}"`).join(' || ');
+
+            try {
+                const participations = await pb.collection('participations').getFullList<Participation>({
+                    filter: filterQuery,
+                });
+
+                // Group by activity
+                const map = new Map<string, Participation[]>();
+                participations.forEach((p) => {
+                    const existing = map.get(p.activity) || [];
+                    existing.push(p);
+                    map.set(p.activity, existing);
+                });
+
+                setParticipationsMap(map);
+            } catch (err) {
+                console.error('Failed to fetch participations:', err);
+            }
+        };
+
+        fetchParticipations();
+    }, [activities]);
 
     const handleComplete = async (id: string) => {
         try {
@@ -69,6 +101,7 @@ export function AdminActivityList() {
                             <ActivityItem
                                 key={activity.id}
                                 activity={activity}
+                                participations={participationsMap.get(activity.id) || []}
                                 onComplete={() => handleComplete(activity.id)}
                                 onCancel={() => handleCancel(activity.id)}
                                 onDelete={() => setDeleteConfirm(activity)}
@@ -96,6 +129,7 @@ export function AdminActivityList() {
 
 interface ActivityItemProps {
     activity: Activity;
+    participations: Participation[];
     onComplete: () => void;
     onCancel: () => void;
     onDelete: () => void;
@@ -103,7 +137,7 @@ interface ActivityItemProps {
     loading: boolean;
 }
 
-function ActivityItem({ activity, onComplete, onCancel, onDelete, onUpdate, loading }: ActivityItemProps) {
+function ActivityItem({ activity, participations, onComplete, onCancel, onDelete, onUpdate, loading }: ActivityItemProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editValues, setEditValues] = useState({
         points_participant: activity.points_participant,
@@ -205,7 +239,15 @@ function ActivityItem({ activity, onComplete, onCancel, onDelete, onUpdate, load
                     <p className="text-sm text-base-content/70">
                         {formatDate(activity.start_time)}
                     </p>
-                    <div className="flex gap-2 mt-1">
+                    <div className="text-xs mt-1 space-y-1">
+                        <div className="text-base-content/70">
+                            Organisator: <span className="font-medium">{activity.expand?.creator?.name || 'Onbekend'}</span>
+                        </div>
+                        <div className="text-base-content/70">
+                            Deelnemers: <span className="font-medium">{participations.length}</span>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 mt-2">
                         <span className={cn('badge badge-sm', getStatusBadgeClass(activity.status))}>
                             {getStatusLabel(activity.status)}
                         </span>
