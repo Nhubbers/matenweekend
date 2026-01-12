@@ -214,7 +214,7 @@ export function ActivityDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <span>⭐</span>
-                    <span>{activity.points_creator} punten + {activity.points_organizer_per_participant || 2} per deelnemer voor organisator</span>
+                    <span>{activity.points_creator} punten + {activity.points_organizer_per_participant || 0} per deelnemer voor organisator</span>
                 </div>
             </div>
 
