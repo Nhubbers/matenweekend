@@ -24,6 +24,7 @@ export interface Activity {
     status: 'open' | 'completed' | 'cancelled';
     points_participant: number;
     points_creator: number;
+    points_organizer_per_participant: number;
     max_participants: number;
     image: string;
     created: string;
@@ -109,6 +110,7 @@ export interface CreateActivityData {
     end_time?: string;
     points_participant: number;
     points_creator: number;
+    points_organizer_per_participant: number;
     max_participants: number;
     image?: File;
 }

@@ -61,6 +61,7 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                 end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
                 points_participant: 5,
                 points_creator: 5,
+                points_organizer_per_participant: 2,
                 max_participants: 0,
                 image: imageFile || undefined,
             });

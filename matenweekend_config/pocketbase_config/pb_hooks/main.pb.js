@@ -51,6 +51,7 @@ onRecordAfterUpdateSuccess((e) => {
     const creatorId = record.get('creator');
     const pointsCreator = record.getInt('points_creator');
     const pointsParticipant = record.getInt('points_participant');
+    const pointsOrganizerPerParticipant = record.getInt('points_organizer_per_participant') || 2;
 
     // Fetch participants first to calculate bonus
     // FIXED: Removed complex params object, used simple string filter
@@ -62,7 +63,7 @@ onRecordAfterUpdateSuccess((e) => {
     // Award creator points
     if (pointsCreator > 0) {
         const participantCount = participations.length;
-        const participantBonus = participantCount * 2;
+        const participantBonus = participantCount * pointsOrganizerPerParticipant;
         const totalCreatorPoints = pointsCreator + participantBonus;
 
         const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
