@@ -296,7 +296,7 @@ onRecordAfterCreateSuccess((e) => {
                     address: senderAddress,
                     name: senderName,
                 },
-                to: [{ address: user.email }],
+                to: [{ address: user.get('email') }],
                 subject: `Nieuwe activiteit: ${activityTitle}`,
                 html: `
                     <h2>Nieuwe activiteit: ${activityTitle}</h2>
