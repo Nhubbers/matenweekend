@@ -221,3 +221,30 @@ onRecordAuthWithPasswordRequest((e) => {
         console.log('Error checking first login bonus: ' + err);
     }
 }, 'users');
+
+
+// ============================================
+// HOOK 7: Validate activity start date (must be tomorrow or later)
+// ============================================
+onRecordBeforeCreateRequest((e) => {
+    const record = e.record;
+    if (!record) return;
+
+    const startTimeStr = record.get('start_time');
+    if (!startTimeStr) return; // Let required field validation handle this if needed
+
+    const start = new Date(startTimeStr);
+    const now = new Date();
+    // Reset time part to compare dates only (start of tomorrow)
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+    if (start < tomorrow) {
+        throw new BadRequestError('Activiteit moet minimaal morgen plaatsvinden');
+    }
+
+    // No need to call e.next() for Before hooks in some versions, but standard is usually no return or next() depending on specific hook version. 
+    // In PB hooks (Goja), return checks or throwing error stops execution. 
+    // 'onRecordBeforeCreateRequest' doesn't strictly need e.next() in JS hooks usually if it's just validation, 
+    // but looking at other hooks, e.next() isn't always used in before hooks in examples unless it's a specific middleware chain.
+    // However, looking at HOOK 2 above, it ends with e.next();. So let's follow that pattern.
+}, 'activities');

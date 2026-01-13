@@ -48,7 +48,17 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
         setLoading(true);
         setError(null);
 
-        if (formData.end_time && new Date(formData.end_time) <= new Date(formData.start_time)) {
+        const start = new Date(formData.start_time);
+        const now = new Date();
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+        if (start < tomorrow) {
+            setError('Activiteit moet minimaal morgen plaatsvinden');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.end_time && new Date(formData.end_time) <= start) {
             setError('Eindtijd moet na starttijd liggen');
             setLoading(false);
             return;
