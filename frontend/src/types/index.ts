@@ -2,11 +2,12 @@
 export interface User {
     id: string;
     email: string;
-    name: string;
-    avatar: string;
-    isAdmin: boolean;
-    emailVisibility: boolean;
-    verified: boolean;
+    name?: string;
+    avatar?: string;
+    isAdmin?: boolean;
+    emailVisibility?: boolean;
+    verified?: boolean;
+    email_notifications?: boolean;
     created: string;
     updated: string;
     collectionId: string;

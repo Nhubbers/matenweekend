@@ -58,6 +58,30 @@ export function ProfilePage() {
                         <div className="stat-value text-lg">#{userRank}</div>
                     </div>
                 </div>
+
+                <div className="form-control w-full max-w-xs mt-4">
+                    <label className="label cursor-pointer">
+                        <span className="label-text">E-mail notificaties bij nieuwe activiteiten</span>
+                        <input
+                            type="checkbox"
+                            className="toggle toggle-primary"
+                            checked={user?.email_notifications ?? false} // Default to false (opt-in)
+                            onChange={async (e) => {
+                                if (!user) return;
+                                try {
+                                    const newValue = e.target.checked;
+                                    const updatedUser = await pb.collection('users').update<User>(user.id, {
+                                        email_notifications: newValue
+                                    });
+                                    updateUser(updatedUser);
+                                } catch (err) {
+                                    console.error('Failed to update email preferences:', err);
+                                    alert('Kon instellingen niet opslaan.');
+                                }
+                            }}
+                        />
+                    </label>
+                </div>
             </div>
 
             <div className="divider" />

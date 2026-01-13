@@ -248,3 +248,73 @@ onRecordBeforeCreateRequest((e) => {
     // but looking at other hooks, e.next() isn't always used in before hooks in examples unless it's a specific middleware chain.
     // However, looking at HOOK 2 above, it ends with e.next();. So let's follow that pattern.
 }, 'activities');
+
+
+// ============================================
+// HOOK 8: Send email notification on activity creation
+// ============================================
+onRecordAfterCreateSuccess((e) => {
+    const activity = e.record;
+
+    // Safety: only send if we have a title and it's open
+    if (activity.get('status') !== 'open') return;
+
+    try {
+        // Find all users who have opted IN for email notifications
+        // The field 'email_notifications' is a boolean. 
+        // We only want users where this is TRUE.
+        // Also ensure they have an email address.
+        const recipients = $app.findRecordsByFilter(
+            'users',
+            "email != '' && email_notifications = true"
+        );
+
+        if (recipients.length === 0) {
+            console.log('No users opted in for email notifications. Skipping email.');
+            return;
+        }
+
+        const appName = $app.settings().meta.appName || 'Matenweekend';
+        const senderAddress = $app.settings().meta.senderAddress;
+        const senderName = $app.settings().meta.senderName || appName;
+        const activityTitle = activity.get('title');
+
+        // Construct a simple link. 
+        // Note: pb_hooks context might not know the frontend URL unless hardcoded or inferred.
+        // Assuming standard production URL or configured app URL.
+        const appUrl = $app.settings().meta.appUrl;
+        const activityUrl = `${appUrl}/activities/${activity.id}`;
+
+        recipients.forEach((user) => {
+            // Don't send to self (creator) if desired, but usually creators want confirmation too?
+            // Let's send to everyone who opted in for now.
+
+            const email = new MailerMessage({
+                from: {
+                    address: senderAddress,
+                    name: senderName,
+                },
+                to: [{ address: user.email }],
+                subject: `Nieuwe activiteit: ${activityTitle}`,
+                html: `
+                    <h2>Nieuwe activiteit: ${activityTitle}</h2>
+                    <p>Er is een nieuwe activiteit aangemaakt op ${appName}.</p>
+                    <p><strong>Wanneer:</strong> ${activity.get('start_time')}</p>
+                    <p>
+                        <a href="${activityUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                            Bekijk activiteit
+                        </a>
+                    </p>
+                    <p><small>Je ontvangt deze email omdat je meldingen hebt ingeschakeld in je profiel.</small></p>
+                `,
+            });
+
+            $app.newMailClient().send(email);
+        });
+
+        console.log(`Sent new activity email to ${recipients.length} users.`);
+
+    } catch (err) {
+        console.log('Error sending new activity emails: ' + err);
+    }
+}, 'activities');
