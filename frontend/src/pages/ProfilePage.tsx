@@ -6,11 +6,26 @@ import { useUserTransactions, useRanking } from '@/hooks/useRanking';
 import type { User } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
 import { nl } from '@/lib/translations';
+import { useEffect } from 'react';
 
 export function ProfilePage() {
     const { user, logout, updateUser } = useAuth();
     const { transactions, totalPoints, loading, error } = useUserTransactions(user?.id);
     const { rankings } = useRanking();
+
+    // Fetch fresh user data to ensure we have the latest email_notifications value
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!user) return;
+            try {
+                const freshUser = await pb.collection('users').getOne<User>(user.id);
+                updateUser(freshUser);
+            } catch (err) {
+                console.error('Failed to fetch user data:', err);
+            }
+        };
+        fetchUserData();
+    }, [user?.id]); // Only run when user.id changes
 
     const userRank = rankings.find((r) => r.id === user?.id)?.rank || '-';
 
