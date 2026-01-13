@@ -92,10 +92,11 @@ export interface News {
 }
 
 // Computed ranking type
+// Computed ranking type
 export interface UserRanking {
     id: string;
     name: string;
-    avatar: string;
+    avatar?: string;
     totalPoints: number;
     rank: number;
 }
