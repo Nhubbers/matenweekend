@@ -226,7 +226,7 @@ onRecordAuthWithPasswordRequest((e) => {
 // ============================================
 // HOOK 7: Validate activity start date (must be tomorrow or later)
 // ============================================
-onRecordBeforeCreateRequest((e) => {
+onRecordCreateRequest((e) => {
     const record = e.record;
     if (!record) return;
 
@@ -247,6 +247,7 @@ onRecordBeforeCreateRequest((e) => {
     // 'onRecordBeforeCreateRequest' doesn't strictly need e.next() in JS hooks usually if it's just validation, 
     // but looking at other hooks, e.next() isn't always used in before hooks in examples unless it's a specific middleware chain.
     // However, looking at HOOK 2 above, it ends with e.next();. So let's follow that pattern.
+    e.next();
 }, 'activities');
 
 
@@ -255,6 +256,7 @@ onRecordBeforeCreateRequest((e) => {
 // ============================================
 onRecordAfterCreateSuccess((e) => {
     const activity = e.record;
+
 
     // Safety: only send if we have a title and it's open
     if (activity.get('status') !== 'open') return;
