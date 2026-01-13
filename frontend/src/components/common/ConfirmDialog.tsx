@@ -9,7 +9,7 @@ interface ConfirmDialogProps {
     cancelLabel?: string;
     onConfirm: () => void;
     onCancel: () => void;
-    variant?: 'default' | 'danger';
+    variant?: 'default' | 'danger' | 'warning';
 }
 
 export function ConfirmDialog({
@@ -32,6 +32,17 @@ export function ConfirmDialog({
         }
     }, [isOpen]);
 
+    const getBtnClass = () => {
+        switch (variant) {
+            case 'danger':
+                return 'btn-error';
+            case 'warning':
+                return 'btn-warning';
+            default:
+                return 'btn-primary';
+        }
+    };
+
     return (
         <dialog ref={dialogRef} className="modal" onClose={onCancel}>
             <div className="modal-box">
@@ -42,7 +53,7 @@ export function ConfirmDialog({
                         {cancelLabel}
                     </button>
                     <button
-                        className={`btn ${variant === 'danger' ? 'btn-error' : 'btn-primary'}`}
+                        className={`btn ${getBtnClass()}`}
                         onClick={onConfirm}
                     >
                         {confirmLabel}

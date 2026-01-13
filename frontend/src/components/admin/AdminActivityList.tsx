@@ -10,6 +10,7 @@ export function AdminActivityList() {
     const { activities, loading, error, refetch, updateActivityStatus, updateActivity, deleteActivity, completeActivity } = useActivities('all');
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<Activity | null>(null);
+    const [completeConfirm, setCompleteConfirm] = useState<Activity | null>(null);
     const [participationsMap, setParticipationsMap] = useState<Map<string, Participation[]>>(new Map());
 
     // Fetch participations for all activities
@@ -42,7 +43,16 @@ export function AdminActivityList() {
         fetchParticipations();
     }, [activities]);
 
-    const handleComplete = async (id: string) => {
+    const handleComplete = async (id: string, force = false) => {
+        if (!force) {
+            const activityParts = participationsMap.get(id) || [];
+            if (activityParts.length === 0) {
+                const activity = activities.find(a => a.id === id);
+                if (activity) setCompleteConfirm(activity);
+                return;
+            }
+        }
+
         try {
             setActionLoading(id);
             const activity = activities.find(a => a.id === id);
@@ -125,6 +135,17 @@ export function AdminActivityList() {
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteConfirm(null)}
                 variant="danger"
+            />
+
+            <ConfirmDialog
+                isOpen={!!completeConfirm}
+                title="Geen deelnemers"
+                message={`Er zijn geen deelnemers voor "${completeConfirm?.title}". De organisator krijgt GEEN punten. Doorgaan?`}
+                confirmLabel="Toch afronden"
+                cancelLabel={nl.cancel}
+                onConfirm={() => completeConfirm && handleComplete(completeConfirm.id, true)}
+                onCancel={() => setCompleteConfirm(null)}
+                variant="warning"
             />
         </>
     );

@@ -60,8 +60,8 @@ onRecordAfterUpdateSuccess((e) => {
         "activity = '" + activityId + "'"
     );
 
-    // Award creator points
-    if (pointsCreator > 0) {
+    // Award creator points ONLY if there is at least 1 participant
+    if (pointsCreator > 0 && participations.length > 0) {
         const participantCount = participations.length;
         const participantBonus = participantCount * pointsOrganizerPerParticipant;
         const totalCreatorPoints = pointsCreator + participantBonus;

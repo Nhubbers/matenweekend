@@ -30,6 +30,7 @@ export function ActivityDetailPage() {
     const [actionLoading, setActionLoading] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [reopenConfirm, setReopenConfirm] = useState(false);
+    const [completeConfirm, setCompleteConfirm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
     const { reopenActivity, completeActivity } = useActivities();
@@ -86,6 +87,13 @@ export function ActivityDetailPage() {
 
     const handleComplete = async () => {
         if (!activity) return;
+
+        // If no participants, show warning confirmation
+        if (participations.length === 0 && !completeConfirm) {
+            setCompleteConfirm(true);
+            return;
+        }
+
         try {
             setActionLoading(true);
             await completeActivity(activity);
@@ -94,6 +102,7 @@ export function ActivityDetailPage() {
             console.error('Failed to complete:', err);
         } finally {
             setActionLoading(false);
+            setCompleteConfirm(false);
         }
     };
 
@@ -337,6 +346,17 @@ export function ActivityDetailPage() {
                 onConfirm={handleReopen}
                 onCancel={() => setReopenConfirm(false)}
                 variant="danger"
+            />
+
+            <ConfirmDialog
+                isOpen={completeConfirm}
+                title="Geen deelnemers"
+                message="Er zijn geen deelnemers ingeschreven. Als je deze activiteit afrondt, krijgt de organisator GEEN punten. Weet je het zeker?"
+                confirmLabel="Toch afronden"
+                cancelLabel={nl.cancel}
+                onConfirm={handleComplete}
+                onCancel={() => setCompleteConfirm(false)}
+                variant="warning"
             />
 
             {isEditing && (
