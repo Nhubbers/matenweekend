@@ -106,3 +106,9 @@ export function getStatusLabel(status: Activity['status']): string {
 export function cn(...classes: (string | undefined | null | false)[]): string {
     return classes.filter(Boolean).join(' ');
 }
+
+// Get completion image URL (proof photo for completed activities)
+export function getCompletionImageUrl(activity: Activity): string {
+    if (!activity.completion_image) return '';
+    return pb.files.getUrl(activity, activity.completion_image);
+}

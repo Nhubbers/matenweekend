@@ -10,6 +10,7 @@ import { useActivities } from '@/hooks/useActivities';
 import {
     formatDateRange,
     getActivityImageUrl,
+    getCompletionImageUrl,
     getDisplayName,
     getStatusBadgeClass,
     getStatusLabel,
@@ -36,6 +37,10 @@ export function ActivityDetailPage() {
     // No-show completion mode state
     const [isCompletingMode, setIsCompletingMode] = useState(false);
     const [localNoshows, setLocalNoshows] = useState<Record<string, boolean>>({});
+
+    // Completion image state
+    const [completionImage, setCompletionImage] = useState<File | null>(null);
+    const [completionImagePreview, setCompletionImagePreview] = useState<string | null>(null);
 
     const { reopenActivity, completeActivity } = useActivities();
 
@@ -140,15 +145,34 @@ export function ActivityDetailPage() {
         }));
     };
 
+    // Handle completion image selection
+    const handleCompletionImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setCompletionImage(file);
+            // Create preview URL
+            const previewUrl = URL.createObjectURL(file);
+            setCompletionImagePreview(previewUrl);
+        }
+    };
+
     // Cancel completion mode
     const handleCancelComplete = () => {
         setIsCompletingMode(false);
         setLocalNoshows({});
+        setCompletionImage(null);
+        setCompletionImagePreview(null);
     };
 
     // Confirm completion with no-shows marked
     const handleConfirmComplete = async () => {
         if (!activity) return;
+
+        // Require completion image
+        if (!completionImage) {
+            alert(nl.completionPhotoRequired);
+            return;
+        }
 
         try {
             setActionLoading(true);
@@ -156,12 +180,14 @@ export function ActivityDetailPage() {
             // First, save no-show statuses to participations
             await markNoshows(localNoshows);
 
-            // Then complete the activity (triggers point awarding in backend)
-            await completeActivity(activity);
+            // Then complete the activity with proof image (triggers point awarding in backend)
+            const updated = await completeActivity(activity, completionImage);
 
-            setActivity({ ...activity, status: 'completed' });
+            setActivity({ ...activity, ...updated, status: 'completed' });
             setIsCompletingMode(false);
             setLocalNoshows({});
+            setCompletionImage(null);
+            setCompletionImagePreview(null);
         } catch (err) {
             console.error('Failed to complete:', err);
             alert(err instanceof Error ? err.message : 'Failed to complete activity');
@@ -170,14 +196,22 @@ export function ActivityDetailPage() {
         }
     };
 
-    // Handle completing with no participants (legacy flow)
+    // Handle completing with no participants (still needs photo!)
     const handleCompleteNoParticipants = async () => {
         if (!activity) return;
 
+        // Require completion image even with no participants
+        if (!completionImage) {
+            alert(nl.completionPhotoRequired);
+            return;
+        }
+
         try {
             setActionLoading(true);
-            await completeActivity(activity);
-            setActivity({ ...activity, status: 'completed' });
+            const updated = await completeActivity(activity, completionImage);
+            setActivity({ ...activity, ...updated, status: 'completed' });
+            setCompletionImage(null);
+            setCompletionImagePreview(null);
         } catch (err) {
             console.error('Failed to complete:', err);
         } finally {
@@ -317,6 +351,20 @@ export function ActivityDetailPage() {
                 <p className="text-base-content/90 whitespace-pre-wrap">{activity.description}</p>
             </div>
 
+            {/* Display proof photo for completed activities */}
+            {activity.status === 'completed' && activity.completion_image && (
+                <div className="mb-4">
+                    <h2 className="font-semibold mb-2">📸 {nl.proofPhoto}</h2>
+                    <div className="rounded-lg overflow-hidden">
+                        <img
+                            src={getCompletionImageUrl(activity)}
+                            alt="Bewijs foto"
+                            className="w-full object-cover rounded-lg"
+                        />
+                    </div>
+                </div>
+            )}
+
             <div className="divider" />
 
             {/* Completion mode header */}
@@ -347,11 +395,43 @@ export function ActivityDetailPage() {
                             <span>⚠️ {noshowCount} {noshowCount === 1 ? 'deelnemer' : 'deelnemers'} gemarkeerd als no-show. Zij krijgen -{activity.points_participant} strafpunten.</span>
                         </div>
                     )}
+
+                    {/* Completion photo upload */}
+                    <div className="card bg-base-200 p-4">
+                        <label className="block font-semibold mb-1">
+                            📸 {nl.uploadCompletionPhoto}
+                        </label>
+                        <p className="text-sm text-base-content/70 mb-3">{nl.completionPhotoHint}</p>
+
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleCompletionImageChange}
+                            className="file-input file-input-bordered w-full"
+                        />
+
+                        {completionImagePreview && (
+                            <div className="mt-3 rounded-lg overflow-hidden">
+                                <img
+                                    src={completionImagePreview}
+                                    alt="Preview"
+                                    className="w-full h-48 object-cover"
+                                />
+                                <p className="text-sm text-success mt-1">✓ {nl.photoSelected}</p>
+                            </div>
+                        )}
+
+                        {!completionImage && (
+                            <p className="text-sm text-error mt-2">* {nl.completionPhotoRequired}</p>
+                        )}
+                    </div>
+
                     <div className="flex gap-2">
                         <button
                             className="btn btn-success flex-1"
                             onClick={handleConfirmComplete}
-                            disabled={actionLoading}
+                            disabled={actionLoading || !completionImage}
                         >
                             {actionLoading ? (
                                 <span className="loading loading-spinner loading-sm" />

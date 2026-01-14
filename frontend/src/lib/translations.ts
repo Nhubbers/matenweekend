@@ -109,6 +109,14 @@ export const nl = {
     noshowWarning: 'Afwezigen krijgen strafpunten',
     completingActivity: 'Activiteit afronden',
     noshowExplanation: 'Markeer deelnemers die niet zijn komen opdagen. Zij krijgen strafpunten.',
+
+    // Completion photo
+    uploadCompletionPhoto: 'Upload bewijs foto',
+    completionPhotoRequired: 'Een foto is verplicht om de activiteit af te ronden',
+    completionPhotoHint: 'Pics or it didn\'t happen! 📸',
+    selectPhoto: 'Selecteer foto',
+    photoSelected: 'Foto geselecteerd',
+    proofPhoto: 'Bewijs foto',
 };
 
 export type TranslationKey = keyof typeof nl;

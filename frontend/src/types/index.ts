@@ -28,6 +28,7 @@ export interface Activity {
     points_organizer_per_participant: number;
     max_participants: number;
     image: string;
+    completion_image?: string; // Proof photo uploaded on completion
     created: string;
     updated: string;
     collectionId: string;

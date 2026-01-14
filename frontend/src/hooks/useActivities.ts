@@ -94,7 +94,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         return updated;
     };
 
-    const completeActivity = async (activity: Activity) => {
+    const completeActivity = async (activity: Activity, completionImage?: File) => {
         const now = new Date();
         const endTime = activity.end_time ? new Date(activity.end_time) : new Date(activity.start_time);
 
@@ -102,7 +102,18 @@ export function useActivities(filter: ActivityFilter = 'all') {
             throw new Error('Kan activiteit niet afronden omdat deze nog niet is afgelopen.');
         }
 
-        return updateActivityStatus(activity.id, 'completed');
+        // Use FormData to send both status update and completion image
+        const formData = new FormData();
+        formData.append('status', 'completed');
+        if (completionImage) {
+            formData.append('completion_image', completionImage);
+        }
+
+        const updated = await pb.collection('activities').update<Activity>(activity.id, formData);
+        setActivities((prev) =>
+            prev.map((a) => (a.id === activity.id ? { ...a, status: updated.status } : a))
+        );
+        return updated;
     };
 
     const reopenActivity = async (activity: Activity) => {
