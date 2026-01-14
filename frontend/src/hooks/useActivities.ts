@@ -94,11 +94,12 @@ export function useActivities(filter: ActivityFilter = 'all') {
         return updated;
     };
 
-    const completeActivity = async (activity: Activity, completionImage?: File) => {
+    const completeActivity = async (activity: Activity, completionImage?: File, isAdmin?: boolean) => {
         const now = new Date();
         const endTime = activity.end_time ? new Date(activity.end_time) : new Date(activity.start_time);
 
-        if (endTime > now) {
+        // Allow admins to bypass the time check for testing
+        if (endTime > now && !isAdmin) {
             throw new Error('Kan activiteit niet afronden omdat deze nog niet is afgelopen.');
         }
 

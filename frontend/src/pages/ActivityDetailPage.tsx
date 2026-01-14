@@ -114,10 +114,11 @@ export function ActivityDetailPage() {
         if (!activity) return;
 
         // Check if activity has already happened (end_time or start_time must be in the past)
+        // Admins can bypass this check for testing purposes
         const now = new Date();
         const endTime = activity.end_time ? new Date(activity.end_time) : new Date(activity.start_time);
 
-        if (endTime > now) {
+        if (endTime > now && !isAdmin) {
             alert('Kan activiteit niet afronden omdat deze nog niet is afgelopen.');
             return;
         }
@@ -181,7 +182,7 @@ export function ActivityDetailPage() {
             await markNoshows(localNoshows);
 
             // Then complete the activity with proof image (triggers point awarding in backend)
-            const updated = await completeActivity(activity, completionImage);
+            const updated = await completeActivity(activity, completionImage, isAdmin);
 
             setActivity({ ...activity, ...updated, status: 'completed' });
             setIsCompletingMode(false);
@@ -208,7 +209,7 @@ export function ActivityDetailPage() {
 
         try {
             setActionLoading(true);
-            const updated = await completeActivity(activity, completionImage);
+            const updated = await completeActivity(activity, completionImage, isAdmin);
             setActivity({ ...activity, ...updated, status: 'completed' });
             setCompletionImage(null);
             setCompletionImagePreview(null);
