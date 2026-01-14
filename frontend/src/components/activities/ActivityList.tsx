@@ -86,8 +86,10 @@ export function ActivityList({
                 newMap.set(activityId, [...existing, participation]);
                 return newMap;
             });
-        } catch (err) {
+        } catch (err: unknown) {
             console.error('Failed to join:', err);
+            const message = err instanceof Error ? err.message : nl.cannotJoinYourOwn;
+            alert(message);
         } finally {
             setActionLoading(null);
         }
@@ -162,7 +164,13 @@ export function ActivityList({
                             activity={activity}
                             participations={participationsMap.get(activity.id) || []}
                             isJoined={joinedMap.has(activity.id)}
-                            onJoin={() => handleJoin(activity.id)}
+                            onJoin={() => {
+                                if (user?.id === activity.creator) {
+                                    alert(nl.cannotJoinYourOwn);
+                                    return;
+                                }
+                                handleJoin(activity.id);
+                            }}
                             onLeave={() => handleLeave(activity.id)}
                             loading={actionLoading === activity.id}
                         />

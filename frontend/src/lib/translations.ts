@@ -93,6 +93,8 @@ export const nl = {
     activityClosed: 'Activiteit is niet meer open',
     alreadyJoined: 'Je doet al mee aan deze activiteit',
     cannotLeaveCompleted: 'Je kunt een afgeronde activiteit niet verlaten',
+    cannotJoinYourOwn: 'Je mag niet deelnemen aan je eigen activiteit',
+    youAreTheOrganizer: 'Je bent de organisator',
 
     // First login
     welcomeTitle: 'Welkom bij Matenweekend 2026!',

@@ -67,12 +67,26 @@ export function ActivityDetailPage() {
         try {
             setActionLoading(true);
             await join();
-        } catch (err) {
+        } catch (err: unknown) {
             console.error('Failed to join:', err);
+            // Show warning to user if join fails (e.g. backend restriction)
+            const message = err instanceof Error ? err.message : nl.cannotJoinYourOwn;
+            alert(message);
         } finally {
             setActionLoading(false);
         }
     };
+
+    // Debugging creator check
+    useEffect(() => {
+        if (activity && user) {
+            console.log('Creator Check Debug:', {
+                userId: user.id,
+                activityCreator: activity.creator,
+                isMatch: user.id === activity.creator
+            });
+        }
+    }, [activity, user]);
 
     const handleLeave = async () => {
         try {
@@ -247,7 +261,7 @@ export function ActivityDetailPage() {
                 <div className="mt-6">
                     {isCreator ? (
                         <button className="btn btn-disabled w-full" disabled>
-                            Je bent de organisator
+                            {nl.youAreTheOrganizer}
                         </button>
                     ) : isJoined ? (
                         <button
