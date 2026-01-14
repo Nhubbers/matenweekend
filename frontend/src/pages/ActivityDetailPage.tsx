@@ -245,7 +245,11 @@ export function ActivityDetailPage() {
 
             {isOpen && (
                 <div className="mt-6">
-                    {isJoined ? (
+                    {isCreator ? (
+                        <button className="btn btn-disabled w-full" disabled>
+                            Je bent de organisator
+                        </button>
+                    ) : isJoined ? (
                         <button
                             className="btn btn-outline btn-error w-full"
                             onClick={handleLeave}

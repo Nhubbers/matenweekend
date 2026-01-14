@@ -132,6 +132,18 @@ onRecordCreateRequest((e) => {
         }
     }
 
+    // Check if user is the creator (Organizer cannot participate)
+    // We need to check who is trying to join. 
+    // If e.auth is present, that's the user. 
+    // If the record has 'user' set explicitly, we should check that too, 
+    // but usually 'user' is set from auth in HOOK 5 (which runs on Create too, but might run after or before? 
+    // Actually, hooks order matters. HOOK 5 is also onRecordCreateRequest.
+    // If we rely on e.auth, it's safer.
+    const currentUser = e.auth;
+    if (currentUser && currentUser.id === activity.get('creator')) {
+        throw new BadRequestError('Je mag niet deelnemen aan je eigen activiteit');
+    }
+
     e.next();
 }, 'participations');
 
