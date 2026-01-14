@@ -197,22 +197,15 @@ export function ActivityDetailPage() {
         }
     };
 
-    // Handle completing with no participants (still needs photo!)
+    // Handle completing with no participants - no photo needed since there's nothing to prove
     const handleCompleteNoParticipants = async () => {
         if (!activity) return;
 
-        // Require completion image even with no participants
-        if (!completionImage) {
-            alert(nl.completionPhotoRequired);
-            return;
-        }
-
         try {
             setActionLoading(true);
-            const updated = await completeActivity(activity, completionImage, isAdmin);
+            // No photo required for activities with no participants
+            const updated = await completeActivity(activity, undefined, isAdmin);
             setActivity({ ...activity, ...updated, status: 'completed' });
-            setCompletionImage(null);
-            setCompletionImagePreview(null);
         } catch (err) {
             console.error('Failed to complete:', err);
         } finally {
