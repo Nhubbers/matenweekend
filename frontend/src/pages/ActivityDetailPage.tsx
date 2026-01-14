@@ -33,6 +33,10 @@ export function ActivityDetailPage() {
     const [completeConfirm, setCompleteConfirm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
+    // No-show completion mode state
+    const [isCompletingMode, setIsCompletingMode] = useState(false);
+    const [localNoshows, setLocalNoshows] = useState<Record<string, boolean>>({});
+
     const { reopenActivity, completeActivity } = useActivities();
 
     const {
@@ -41,6 +45,7 @@ export function ActivityDetailPage() {
         join,
         leave,
         removeParticipant,
+        markNoshows,
     } = useParticipations(id);
 
     useEffect(() => {
@@ -99,14 +104,75 @@ export function ActivityDetailPage() {
         }
     };
 
-    const handleComplete = async () => {
+    // Enter completion mode - allows organizer to mark no-shows
+    const handleStartComplete = () => {
         if (!activity) return;
 
-        // If no participants, show warning confirmation
-        if (participations.length === 0 && !completeConfirm) {
+        // Check if activity has already happened (end_time or start_time must be in the past)
+        const now = new Date();
+        const endTime = activity.end_time ? new Date(activity.end_time) : new Date(activity.start_time);
+
+        if (endTime > now) {
+            alert('Kan activiteit niet afronden omdat deze nog niet is afgelopen.');
+            return;
+        }
+
+        // If no participants, show warning confirmation instead of completion mode
+        if (participations.length === 0) {
             setCompleteConfirm(true);
             return;
         }
+
+        // Initialize local noshows state from existing participation data
+        const initialNoshows: Record<string, boolean> = {};
+        participations.forEach(p => {
+            initialNoshows[p.id] = p.noshow || false;
+        });
+        setLocalNoshows(initialNoshows);
+        setIsCompletingMode(true);
+    };
+
+    // Toggle no-show status for a participant
+    const handleToggleNoshow = (participationId: string, noshow: boolean) => {
+        setLocalNoshows(prev => ({
+            ...prev,
+            [participationId]: noshow
+        }));
+    };
+
+    // Cancel completion mode
+    const handleCancelComplete = () => {
+        setIsCompletingMode(false);
+        setLocalNoshows({});
+    };
+
+    // Confirm completion with no-shows marked
+    const handleConfirmComplete = async () => {
+        if (!activity) return;
+
+        try {
+            setActionLoading(true);
+
+            // First, save no-show statuses to participations
+            await markNoshows(localNoshows);
+
+            // Then complete the activity (triggers point awarding in backend)
+            await completeActivity(activity);
+
+            setActivity({ ...activity, status: 'completed' });
+            setIsCompletingMode(false);
+            setLocalNoshows({});
+        } catch (err) {
+            console.error('Failed to complete:', err);
+            alert(err instanceof Error ? err.message : 'Failed to complete activity');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Handle completing with no participants (legacy flow)
+    const handleCompleteNoParticipants = async () => {
+        if (!activity) return;
 
         try {
             setActionLoading(true);
@@ -188,6 +254,9 @@ export function ActivityDetailPage() {
     const isFull =
         activity.max_participants > 0 && participations.length >= activity.max_participants;
 
+    // Count how many are marked as no-show in local state
+    const noshowCount = Object.values(localNoshows).filter(Boolean).length;
+
     return (
         <PageContainer>
             <button className="btn btn-ghost btn-sm mb-4" onClick={() => navigate(-1)}>
@@ -250,14 +319,59 @@ export function ActivityDetailPage() {
 
             <div className="divider" />
 
+            {/* Completion mode header */}
+            {isCompletingMode && (
+                <div className="alert alert-info mb-4">
+                    <div>
+                        <h3 className="font-bold">🎯 {nl.completingActivity}</h3>
+                        <p className="text-sm">{nl.noshowExplanation}</p>
+                    </div>
+                </div>
+            )}
+
             <ParticipantList
                 participations={participations}
                 maxParticipants={activity.max_participants}
                 onRemove={removeParticipant}
-                showRemoveButton={isAdmin}
+                showRemoveButton={isAdmin && !isCompletingMode}
+                isCompletingActivity={isCompletingMode}
+                localNoshows={localNoshows}
+                onToggleNoshow={handleToggleNoshow}
             />
 
-            {isOpen && (
+            {/* Completion mode actions */}
+            {isCompletingMode && (
+                <div className="mt-6 space-y-3">
+                    {noshowCount > 0 && (
+                        <div className="alert alert-warning">
+                            <span>⚠️ {noshowCount} {noshowCount === 1 ? 'deelnemer' : 'deelnemers'} gemarkeerd als no-show. Zij krijgen -{activity.points_participant} strafpunten.</span>
+                        </div>
+                    )}
+                    <div className="flex gap-2">
+                        <button
+                            className="btn btn-success flex-1"
+                            onClick={handleConfirmComplete}
+                            disabled={actionLoading}
+                        >
+                            {actionLoading ? (
+                                <span className="loading loading-spinner loading-sm" />
+                            ) : (
+                                `✅ ${nl.confirmComplete}`
+                            )}
+                        </button>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={handleCancelComplete}
+                            disabled={actionLoading}
+                        >
+                            {nl.cancelComplete}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Normal join/leave buttons (hidden in completion mode) */}
+            {isOpen && !isCompletingMode && (
                 <div className="mt-6">
                     {isCreator ? (
                         <button className="btn btn-disabled w-full" disabled>
@@ -293,7 +407,8 @@ export function ActivityDetailPage() {
                 </div>
             )}
 
-            {canManage && (
+            {/* Management buttons (hidden in completion mode) */}
+            {canManage && !isCompletingMode && (
                 <div className="mt-6 space-y-2">
                     <div className="divider">Beheer</div>
                     <div className="flex flex-wrap gap-2">
@@ -308,7 +423,7 @@ export function ActivityDetailPage() {
                                 </button>
                                 <button
                                     className="btn btn-success btn-sm"
-                                    onClick={handleComplete}
+                                    onClick={handleStartComplete}
                                     disabled={actionLoading}
                                 >
                                     {nl.complete}
@@ -372,7 +487,7 @@ export function ActivityDetailPage() {
                 message="Er zijn geen deelnemers ingeschreven. Als je deze activiteit afrondt, krijgt de organisator GEEN punten. Weet je het zeker?"
                 confirmLabel="Toch afronden"
                 cancelLabel={nl.cancel}
-                onConfirm={handleComplete}
+                onConfirm={handleCompleteNoParticipants}
                 onCancel={() => setCompleteConfirm(false)}
                 variant="warning"
             />

@@ -60,10 +60,15 @@ onRecordAfterUpdateSuccess((e) => {
         "activity = '" + activityId + "'"
     );
 
-    // Award creator points ONLY if there is at least 1 participant
-    if (pointsCreator > 0 && participations.length > 0) {
-        const participantCount = participations.length;
-        const participantBonus = participantCount * pointsOrganizerPerParticipant;
+    // Count participants who actually attended (not no-shows)
+    const attendedParticipations = participations.filter(function (p) {
+        return !p.getBool('noshow');
+    });
+    const attendedCount = attendedParticipations.length;
+
+    // Award creator points ONLY if there is at least 1 participant who attended
+    if (pointsCreator > 0 && attendedCount > 0) {
+        const participantBonus = attendedCount * pointsOrganizerPerParticipant;
         const totalCreatorPoints = pointsCreator + participantBonus;
 
         const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
@@ -72,30 +77,41 @@ onRecordAfterUpdateSuccess((e) => {
         creatorTx.set('user', creatorId);
         creatorTx.set('amount', totalCreatorPoints);
         // Detailed reason showing the calculation
-        creatorTx.set('reason', 'Created: ' + activityTitle + ' (' + pointsCreator + ' + ' + participantCount + 'x2 deelnemers)');
+        creatorTx.set('reason', 'Created: ' + activityTitle + ' (' + pointsCreator + ' + ' + attendedCount + 'x' + pointsOrganizerPerParticipant + ' deelnemers)');
         creatorTx.set('activity', activityId);
         creatorTx.set('type', 'creation');
 
         $app.save(creatorTx);
-        console.log('Awarded ' + totalCreatorPoints + ' points to creator ' + creatorId);
+        console.log('Awarded ' + totalCreatorPoints + ' points to creator ' + creatorId + ' (based on ' + attendedCount + ' attendees)');
     }
 
-    // Award participant points
+    // Award participant points (or deduct for no-shows)
     if (pointsParticipant > 0) {
         participations.forEach(function (p) {
             const userId = p.get('user');
+            const isNoshow = p.getBool('noshow');
 
             const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
             const tx = new Record(pointTransactions);
 
             tx.set('user', userId);
-            tx.set('amount', pointsParticipant);
-            tx.set('reason', 'Participated: ' + activityTitle);
             tx.set('activity', activityId);
-            tx.set('type', 'participation');
+
+            if (isNoshow) {
+                // No-show gets NEGATIVE points (penalty)
+                tx.set('amount', -pointsParticipant);
+                tx.set('reason', 'No-show: ' + activityTitle);
+                tx.set('type', 'deduction');
+                console.log('Deducted ' + pointsParticipant + ' points from no-show ' + userId);
+            } else {
+                // Normal participant gets positive points
+                tx.set('amount', pointsParticipant);
+                tx.set('reason', 'Participated: ' + activityTitle);
+                tx.set('type', 'participation');
+                console.log('Awarded ' + pointsParticipant + ' points to participant ' + userId);
+            }
 
             $app.save(tx);
-            console.log('Awarded ' + pointsParticipant + ' points to participant ' + userId);
         });
     }
 

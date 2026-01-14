@@ -43,6 +43,7 @@ export interface Participation {
     id: string;
     activity: string; // Activity ID
     user: string; // User ID
+    noshow?: boolean; // Whether participant was a no-show
     created: string;
     updated: string;
     collectionId: string;

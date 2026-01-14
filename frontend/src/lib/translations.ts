@@ -100,6 +100,15 @@ export const nl = {
     welcomeTitle: 'Welkom bij Matenweekend 2026!',
     firstLoginBonus: 'Je hebt 10 punten verdiend voor je eerste login!',
     letsGo: 'Lets Go!',
+
+    // No-show feature
+    noshow: 'No-show',
+    markNoshows: 'Markeer afwezigen',
+    confirmComplete: 'Bevestig afronden',
+    cancelComplete: 'Annuleren',
+    noshowWarning: 'Afwezigen krijgen strafpunten',
+    completingActivity: 'Activiteit afronden',
+    noshowExplanation: 'Markeer deelnemers die niet zijn komen opdagen. Zij krijgen strafpunten.',
 };
 
 export type TranslationKey = keyof typeof nl;

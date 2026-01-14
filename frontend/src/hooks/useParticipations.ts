@@ -63,6 +63,15 @@ export function useParticipations(activityId?: string) {
         setParticipations((prev) => prev.filter((p) => p.id !== participationId));
     };
 
+    const markNoshows = async (noshows: Record<string, boolean>) => {
+        // Update each participation with noshow status
+        const updates = Object.entries(noshows).map(([participationId, isNoshow]) =>
+            pb.collection('participations').update(participationId, { noshow: isNoshow })
+        );
+        await Promise.all(updates);
+        await fetchParticipations(); // Refresh data
+    };
+
     return {
         participations,
         loading,
@@ -73,6 +82,7 @@ export function useParticipations(activityId?: string) {
         join,
         leave,
         removeParticipant,
+        markNoshows,
     };
 }
 
