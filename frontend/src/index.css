@@ -88,3 +88,8 @@ body {
   margin-top: 0.25em;
   margin-bottom: 0.25em;
 }
+
+/* Ensure scroll containers don't show focus outlines */
+[tabindex="-1"]:focus {
+  outline: none;
+}
