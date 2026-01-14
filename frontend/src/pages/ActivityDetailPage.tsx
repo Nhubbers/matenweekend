@@ -407,7 +407,6 @@ export function ActivityDetailPage() {
                         <input
                             type="file"
                             accept="image/*"
-                            capture="environment"
                             onChange={handleCompletionImageChange}
                             className="file-input file-input-bordered w-full"
                         />
