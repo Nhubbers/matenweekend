@@ -11,7 +11,7 @@ export function PointsForm() {
     const [success, setSuccess] = useState(false);
 
     const [selectedUser, setSelectedUser] = useState('');
-    const [points, setPoints] = useState(0);
+    const [points, setPoints] = useState<string | number>('');
     const [reason, setReason] = useState('');
 
     // Fetch all users by getting all point transactions and extracting unique users
@@ -43,13 +43,15 @@ export function PointsForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedUser || points === 0 || !reason) return;
+        const pointsValue = typeof points === 'string' ? parseInt(points) : points;
+
+        if (!selectedUser || isNaN(pointsValue) || pointsValue === 0 || !reason) return;
 
         try {
-            await awardPoints(selectedUser, points, reason);
+            await awardPoints(selectedUser, pointsValue, reason);
             setSuccess(true);
             setSelectedUser('');
-            setPoints(0);
+            setPoints('');
             setReason('');
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
@@ -102,7 +104,7 @@ export function PointsForm() {
                         type="number"
                         className="input input-bordered"
                         value={points}
-                        onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
+                        onChange={(e) => setPoints(e.target.value)}
                         required
                     />
                     <label className="label">
@@ -129,7 +131,7 @@ export function PointsForm() {
                 <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={loading || !selectedUser || points === 0 || !reason}
+                    disabled={loading || !selectedUser || points === '' || points === 0 || !reason}
                 >
                     {loading ? (
                         <span className="loading loading-spinner loading-sm" />
