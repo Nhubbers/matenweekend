@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout';
-import { ParticipantList, EditActivityModal } from '@/components/activities';
+import { ParticipantList, EditActivityModal, CoOrganizerManager } from '@/components/activities';
 import { LoadingSpinner, ErrorMessage, Avatar, ConfirmDialog } from '@/components/common';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,7 +60,7 @@ export function ActivityDetailPage() {
             try {
                 setLoading(true);
                 const result = await pb.collection('activities').getOne<Activity>(id, {
-                    expand: 'creator',
+                    expand: 'creator,co_organizers',
                 });
                 setActivity(result);
             } catch (err) {
@@ -275,7 +275,9 @@ export function ActivityDetailPage() {
 
     const creator = activity.expand?.creator;
     const isCreator = user?.id === activity.creator;
-    const canManage = isAdmin || isCreator;
+    const isCoOrganizer = user && (activity.co_organizers || []).includes(user.id);
+    const isOrganizer = isCreator || isCoOrganizer;
+    const canManage = isAdmin || isOrganizer;
 
     const imageUrl = getActivityImageUrl(activity);
     const isOpen = activity.status === 'open';
@@ -344,6 +346,18 @@ export function ActivityDetailPage() {
                 <h2 className="font-semibold mb-2">{nl.description}:</h2>
                 <p className="text-base-content/90 whitespace-pre-wrap">{activity.description}</p>
             </div>
+
+            {/* Co-organizers section */}
+            <CoOrganizerManager
+                activity={activity}
+                isCreator={isCreator}
+                onUpdate={() => {
+                    // Refetch full activity with expanded relations
+                    pb.collection('activities').getOne<Activity>(activity.id, {
+                        expand: 'creator,co_organizers',
+                    }).then(setActivity);
+                }}
+            />
 
             {/* Display proof photo for completed activities */}
             {activity.status === 'completed' && activity.completion_image && (
@@ -446,9 +460,9 @@ export function ActivityDetailPage() {
             {/* Normal join/leave buttons (hidden in completion mode) */}
             {isOpen && !isCompletingMode && (
                 <div className="mt-6">
-                    {isCreator ? (
+                    {isOrganizer ? (
                         <button className="btn btn-disabled w-full" disabled>
-                            {nl.youAreTheOrganizer}
+                            {isCreator ? nl.youAreTheOrganizer : nl.youAreCoOrganizer}
                         </button>
                     ) : isJoined ? (
                         <button

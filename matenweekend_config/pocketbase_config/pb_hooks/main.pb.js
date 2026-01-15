@@ -69,20 +69,45 @@ onRecordAfterUpdateSuccess((e) => {
     // Award creator points ONLY if there is at least 1 participant who attended
     if (pointsCreator > 0 && attendedCount > 0) {
         const participantBonus = attendedCount * pointsOrganizerPerParticipant;
-        const totalCreatorPoints = pointsCreator + participantBonus;
+
+        // Get all organizers (creator + co-organizers)
+        const coOrganizers = record.get('co_organizers') || [];
+        const allOrganizers = [creatorId];
+        if (Array.isArray(coOrganizers)) {
+            coOrganizers.forEach(function (coOrgId) {
+                if (coOrgId && allOrganizers.indexOf(coOrgId) === -1) {
+                    allOrganizers.push(coOrgId);
+                }
+            });
+        }
+        const organizerCount = allOrganizers.length;
+
+        // Each organizer gets FULL base points, but the per-participant bonus is SPLIT
+        const bonusPerOrganizer = Math.floor(participantBonus / organizerCount);
+        const totalPerOrganizer = pointsCreator + bonusPerOrganizer;
 
         const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
-        const creatorTx = new Record(pointTransactions);
 
-        creatorTx.set('user', creatorId);
-        creatorTx.set('amount', totalCreatorPoints);
-        // Detailed reason showing the calculation
-        creatorTx.set('reason', 'Created: ' + activityTitle + ' (' + pointsCreator + ' + ' + attendedCount + 'x' + pointsOrganizerPerParticipant + ' deelnemers)');
-        creatorTx.set('activity', activityId);
-        creatorTx.set('type', 'creation');
+        allOrganizers.forEach(function (organizerId) {
+            const orgTx = new Record(pointTransactions);
+            orgTx.set('user', organizerId);
+            orgTx.set('amount', totalPerOrganizer);
 
-        $app.save(creatorTx);
-        console.log('Awarded ' + totalCreatorPoints + ' points to creator ' + creatorId + ' (based on ' + attendedCount + ' attendees)');
+            // Show calculation breakdown in reason
+            var reason = 'Organized: ' + activityTitle + ' (' + pointsCreator;
+            if (organizerCount > 1) {
+                reason += ' + ' + bonusPerOrganizer + ' bonus split ' + organizerCount + '-ways';
+            } else {
+                reason += ' + ' + attendedCount + 'x' + pointsOrganizerPerParticipant + ' deelnemers';
+            }
+            reason += ')';
+            orgTx.set('reason', reason);
+            orgTx.set('activity', activityId);
+            orgTx.set('type', 'creation');
+
+            $app.save(orgTx);
+            console.log('Awarded ' + totalPerOrganizer + ' points to organizer ' + organizerId + ' (1 of ' + organizerCount + ')');
+        });
     }
 
     // Award participant points (or deduct for no-shows)
@@ -158,6 +183,12 @@ onRecordCreateRequest((e) => {
     const currentUser = e.auth;
     if (currentUser && currentUser.id === activity.get('creator')) {
         throw new BadRequestError('Je mag niet deelnemen aan je eigen activiteit');
+    }
+
+    // Check if user is a co-organizer (Co-organizers also cannot participate)
+    const coOrganizers = activity.get('co_organizers') || [];
+    if (currentUser && Array.isArray(coOrganizers) && coOrganizers.indexOf(currentUser.id) !== -1) {
+        throw new BadRequestError('Je mag niet deelnemen als mede-organisator');
     }
 
     e.next();

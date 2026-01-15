@@ -22,6 +22,7 @@ export interface Activity {
     start_time: string;
     end_time: string;
     creator: string; // User ID
+    co_organizers?: string[]; // User IDs of co-organizers
     status: 'open' | 'completed' | 'cancelled';
     points_participant: number;
     points_creator: number;
@@ -36,6 +37,7 @@ export interface Activity {
     // Expanded relations
     expand?: {
         creator?: User;
+        co_organizers?: User[];
     };
 }
 

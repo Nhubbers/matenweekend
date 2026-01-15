@@ -117,6 +117,15 @@ export const nl = {
     selectPhoto: 'Selecteer foto',
     photoSelected: 'Foto geselecteerd',
     proofPhoto: 'Bewijs foto',
+
+    // Co-organizers
+    coOrganizers: 'Mede-organisatoren',
+    addCoOrganizer: 'Mede-organisator toevoegen',
+    removeCoOrganizer: 'Verwijderen',
+    youAreCoOrganizer: 'Je bent mede-organisator',
+    cannotAddParticipantAsCoOrganizer: 'Verwijder deze gebruiker eerst als deelnemer',
+    selectUser: 'Selecteer gebruiker',
+    noUsersAvailable: 'Geen gebruikers beschikbaar',
 };
 
 export type TranslationKey = keyof typeof nl;

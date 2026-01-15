@@ -28,7 +28,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
 
             const result = await pb.collection('activities').getFullList<Activity>({
                 sort: 'start_time',
-                expand: 'creator',
+                expand: 'creator,co_organizers',
                 filter: filterQuery || undefined,
             });
 
@@ -67,7 +67,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
 
     const getActivity = async (id: string) => {
         return await pb.collection('activities').getOne<Activity>(id, {
-            expand: 'creator',
+            expand: 'creator,co_organizers',
         });
     };
 
