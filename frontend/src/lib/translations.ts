@@ -117,6 +117,7 @@ export const nl = {
     selectPhoto: 'Selecteer foto',
     photoSelected: 'Foto geselecteerd',
     proofPhoto: 'Bewijs foto',
+    activityNotYetFinished: 'Deze activiteit is nog niet afgelopen. Je kunt pas afronden nadat de activiteit heeft plaatsgevonden.',
 
     // Co-organizers
     coOrganizers: 'Mede-organisatoren',

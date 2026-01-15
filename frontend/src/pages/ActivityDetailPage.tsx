@@ -119,7 +119,7 @@ export function ActivityDetailPage() {
         const endTime = activity.end_time ? new Date(activity.end_time) : new Date(activity.start_time);
 
         if (endTime > now && !isAdmin) {
-            alert('Kan activiteit niet afronden omdat deze nog niet is afgelopen.');
+            alert(nl.activityNotYetFinished);
             return;
         }
 

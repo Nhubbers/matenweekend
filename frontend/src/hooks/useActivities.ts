@@ -100,7 +100,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
 
         // Allow admins to bypass the time check for testing
         if (endTime > now && !isAdmin) {
-            throw new Error('Kan activiteit niet afronden omdat deze nog niet is afgelopen.');
+            throw new Error('Deze activiteit is nog niet afgelopen. Je kunt pas afronden nadat de activiteit heeft plaatsgevonden.');
         }
 
         // Use FormData to send both status update and completion image
