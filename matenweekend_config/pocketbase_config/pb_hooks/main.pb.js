@@ -340,6 +340,18 @@ onRecordAfterCreateSuccess((e) => {
         const senderName = $app.settings().meta.senderName || appName;
         const activityTitle = activity.get('title');
 
+        // Fetch creator name
+        let creatorName = 'een mede-organisator';
+        try {
+            const creatorId = activity.get('creator');
+            if (creatorId) {
+                const creator = $app.findRecordById('users', creatorId);
+                creatorName = creator.get('name') || creator.get('email') || 'een mede-organisator';
+            }
+        } catch (err) {
+            console.log('Error fetching creator name for email: ' + err);
+        }
+
         // Construct a simple link. 
         // Note: pb_hooks context might not know the frontend URL unless hardcoded or inferred.
         // Assuming standard production URL or configured app URL.
@@ -359,7 +371,7 @@ onRecordAfterCreateSuccess((e) => {
                 subject: `Nieuwe activiteit: ${activityTitle}`,
                 html: `
                     <h2>Nieuwe activiteit: ${activityTitle}</h2>
-                    <p>Er is een nieuwe activiteit aangemaakt op ${appName}.</p>
+                    <p>Er is een nieuwe activiteit aangemaakt door <strong>${creatorName}</strong> op ${appName}.</p>
                     <p><strong>Wanneer:</strong> ${activity.get('start_time')}</p>
                     <p>
                         <a href="${activityUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
