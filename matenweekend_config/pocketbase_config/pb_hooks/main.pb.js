@@ -355,7 +355,10 @@ onRecordAfterCreateSuccess((e) => {
         // Construct a simple link. 
         // Note: pb_hooks context might not know the frontend URL unless hardcoded or inferred.
         // Assuming standard production URL or configured app URL.
-        const appUrl = $app.settings().meta.appUrl;
+        let appUrl = $app.settings().meta.appUrl;
+        if (!appUrl) {
+            appUrl = 'https://matenweekend.nl';
+        }
         const activityUrl = `${appUrl}/activities/${activity.id}`;
 
         recipients.forEach((user) => {
