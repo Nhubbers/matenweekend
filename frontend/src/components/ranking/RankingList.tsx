@@ -6,9 +6,10 @@ interface RankingListProps {
     rankings: UserRanking[];
     loading: boolean;
     error: string | null;
+    onUserClick?: (ranking: UserRanking) => void;
 }
 
-export function RankingList({ rankings, loading, error }: RankingListProps) {
+export function RankingList({ rankings, loading, error, onUserClick }: RankingListProps) {
     if (loading) {
         return (
             <div className="flex justify-center py-12">
@@ -41,6 +42,7 @@ export function RankingList({ rankings, loading, error }: RankingListProps) {
                     key={ranking.id}
                     ranking={ranking}
                     maxPoints={maxPoints}
+                    onClick={onUserClick ? () => onUserClick(ranking) : undefined}
                 />
             ))}
         </div>

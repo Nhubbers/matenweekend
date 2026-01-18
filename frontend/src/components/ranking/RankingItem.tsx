@@ -5,9 +5,10 @@ import type { UserRanking } from '@/types';
 interface RankingItemProps {
     ranking: UserRanking;
     maxPoints: number;
+    onClick?: () => void;
 }
 
-export function RankingItem({ ranking, maxPoints }: RankingItemProps) {
+export function RankingItem({ ranking, maxPoints, onClick }: RankingItemProps) {
     const progressPercentage = maxPoints > 0 ? (ranking.totalPoints / maxPoints) * 100 : 0;
 
     const getMedal = (rank: number) => {
@@ -31,12 +32,14 @@ export function RankingItem({ ranking, maxPoints }: RankingItemProps) {
     return (
         <div
             className={cn(
-                'card bg-base-200 p-4',
+                'card bg-base-200 p-4 transition-colors',
                 ranking.rank <= 3 && 'border-2',
                 ranking.rank === 1 && 'border-yellow-500',
                 ranking.rank === 2 && 'border-gray-400',
-                ranking.rank === 3 && 'border-amber-700'
+                ranking.rank === 3 && 'border-amber-700',
+                onClick && 'cursor-pointer hover:bg-base-300'
             )}
+            onClick={onClick}
         >
             <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10">

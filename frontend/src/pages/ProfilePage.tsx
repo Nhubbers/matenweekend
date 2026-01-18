@@ -1,16 +1,16 @@
 import { PageContainer } from '@/components/layout';
-import { Avatar, LoadingSpinner, ErrorMessage } from '@/components/common';
+import { Avatar } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import { pb } from '@/lib/pocketbase';
-import { useUserTransactions, useRanking } from '@/hooks/useRanking';
+import { useRanking, useUserTransactions } from '@/hooks/useRanking';
+import { UserPointsHistory } from '@/components/ranking';
 import type { User } from '@/types';
-import { formatRelativeTime } from '@/lib/utils';
 import { nl } from '@/lib/translations';
 import { useEffect } from 'react';
 
 export function ProfilePage() {
     const { user, logout, updateUser } = useAuth();
-    const { transactions, totalPoints, loading, error } = useUserTransactions(user?.id);
+    const { totalPoints } = useUserTransactions(user?.id);
     const { rankings } = useRanking();
 
     // Fetch fresh user data to ensure we have the latest email_notifications value
@@ -103,39 +103,8 @@ export function ProfilePage() {
 
             <h3 className="font-bold mb-3">{nl.pointsHistory}:</h3>
 
-            {loading ? (
-                <div className="flex justify-center py-8">
-                    <LoadingSpinner />
-                </div>
-            ) : error ? (
-                <ErrorMessage message={error} />
-            ) : transactions.length === 0 ? (
-                <p className="text-base-content/70 text-center py-4">
-                    Nog geen punten verdiend
-                </p>
-            ) : (
-                <div className="space-y-2 mb-6">
-                    {transactions.map((tx) => (
-                        <div
-                            key={tx.id}
-                            className="flex items-center justify-between p-3 bg-base-200 rounded-lg"
-                        >
-                            <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{tx.reason}</p>
-                                <p className="text-sm text-base-content/70">
-                                    {formatRelativeTime(tx.created)}
-                                </p>
-                            </div>
-                            <span
-                                className={`font-bold ${tx.amount >= 0 ? 'text-success' : 'text-error'}`}
-                            >
-                                {tx.amount >= 0 ? '+' : ''}
-                                {tx.amount}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            )}
+            {/* Replaced inline logic with component */}
+            {user && <UserPointsHistory userId={user.id} />}
 
             <div className="divider" />
 
