@@ -19,7 +19,18 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const getFirstLoginKey = (userId: string) => `matenweekend_first_login_shown_${userId}`;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(pb.authStore.record as User | null);
+    // Validate token on initialization - if invalid/expired, clear immediately
+    // This prevents the "logged in but empty data" issue when tokens expire
+    const getInitialUser = (): User | null => {
+        if (pb.authStore.record && !pb.authStore.isValid) {
+            // Token exists but is invalid/expired - clear it
+            pb.authStore.clear();
+            return null;
+        }
+        return pb.authStore.record as User | null;
+    };
+
+    const [user, setUser] = useState<User | null>(getInitialUser);
     const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
     // Auth is checked synchronously from localStorage, so no loading state needed
     const isLoading = false;
