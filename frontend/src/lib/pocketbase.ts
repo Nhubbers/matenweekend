@@ -6,3 +6,18 @@ export const pb = new PocketBase(pocketbaseUrl);
 
 // Disable auto-cancellation for duplicate requests
 pb.autoCancellation(false);
+
+// Add a global error interceptor to handle 401 Unauthorized responses
+// This ensures users are logged out if their token expires while using the app
+const originalSend = pb.send;
+pb.send = async <T = any>(path: string, params: any): Promise<T> => {
+    try {
+        return await originalSend.call(pb, path, params) as T;
+    } catch (err: any) {
+        // Check if the error is a 401 Unauthorized/Token invalid
+        if (err?.status === 401) {
+            pb.authStore.clear();
+        }
+        throw err;
+    }
+};
