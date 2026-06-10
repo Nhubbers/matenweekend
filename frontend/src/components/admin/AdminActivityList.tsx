@@ -4,7 +4,7 @@ import { useActivities } from '@/hooks/useActivities';
 import { LoadingSpinner, ErrorMessage, ConfirmDialog } from '@/components/common';
 import { formatDate, getStatusBadgeClass, getStatusLabel, cn } from '@/lib/utils';
 import { nl } from '@/lib/translations';
-import type { Activity, Participation } from '@/types';
+import type { Activity, Participation, User } from '@/types';
 
 export function AdminActivityList() {
     const { activities, loading, error, refetch, updateActivityStatus, updateActivity, deleteActivity, completeActivity } = useActivities('all');
