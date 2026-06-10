@@ -49,6 +49,7 @@ export const nl = {
     completed: 'Afgerond',
     cancelled: 'Geannuleerd',
     upcoming: 'Aankomend',
+    overdue: 'Openstaand',
     all: 'Alle',
 
     // Admin

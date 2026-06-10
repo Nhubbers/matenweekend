@@ -5,4 +5,5 @@ export { ParticipantList } from './ParticipantList';
 export { EditActivityModal } from './EditActivityModal';
 export { CoOrganizerManager } from './CoOrganizerManager';
 export { OverdueActivitiesBanner } from './OverdueActivitiesBanner';
+export { OverdueAlert } from './OverdueAlert';
 

@@ -17,6 +17,7 @@ interface ActivityListProps {
 
 const filterOptions: { value: ActivityFilter; label: string }[] = [
     { value: 'upcoming', label: nl.upcoming },
+    { value: 'overdue', label: nl.overdue },
     { value: 'all', label: nl.all },
     { value: 'completed', label: nl.completed },
 ];

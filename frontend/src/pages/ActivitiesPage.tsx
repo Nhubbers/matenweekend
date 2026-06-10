@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PageContainer } from '@/components/layout';
-import { ActivityList, CreateActivityModal } from '@/components/activities';
+import { ActivityList, CreateActivityModal, OverdueAlert } from '@/components/activities';
 import { useActivities } from '@/hooks/useActivities';
 import { nl } from '@/lib/translations';
 import type { ActivityFilter } from '@/types';
@@ -9,13 +9,14 @@ import type { ActivityFilter } from '@/types';
 export function ActivitiesPage() {
     const location = useLocation();
     const [filter, setFilter] = useState<ActivityFilter>(
-        location.state?.showAll ? 'all' : 'upcoming'
+        location.state?.filter || (location.state?.showAll ? 'all' : 'upcoming')
     );
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        if (location.state?.showAll) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (location.state?.filter) {
+            setFilter(location.state.filter);
+        } else if (location.state?.showAll) {
             setFilter('all');
         }
     }, [location.state]);
@@ -27,6 +28,11 @@ export function ActivitiesPage() {
             <div className="mb-4">
                 <h1 className="text-2xl font-bold">{nl.activities}</h1>
             </div>
+
+            <OverdueAlert 
+                currentFilter={filter}
+                onViewOverdue={() => setFilter('overdue')}
+            />
 
             <ActivityList
                 filter={filter}

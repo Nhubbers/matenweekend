@@ -58,7 +58,7 @@ export function OverdueActivitiesBanner() {
         if (overdueActivities.length === 1) {
             navigate(`/activities/${overdueActivities[0].id}`);
         } else {
-            navigate('/activities', { state: { showAll: true } });
+            navigate('/activities', { state: { filter: 'overdue' } });
         }
     };
 

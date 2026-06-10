@@ -106,7 +106,7 @@ export interface UserRanking {
 }
 
 // Activity filter type
-export type ActivityFilter = 'upcoming' | 'all' | 'completed';
+export type ActivityFilter = 'upcoming' | 'all' | 'completed' | 'overdue';
 
 // Form data for creating activities
 export interface CreateActivityData {

@@ -34,6 +34,8 @@ export function useActivities(filter: ActivityFilter = 'all') {
 
             if (filter === 'upcoming') {
                 filterQuery = `start_time >= "${startOfToday}" && status = "open"`;
+            } else if (filter === 'overdue') {
+                filterQuery = `start_time < "${now.toISOString()}" && status = "open"`;
             } else if (filter === 'completed') {
                 filterQuery = 'status = "completed" || status = "cancelled"';
             }
