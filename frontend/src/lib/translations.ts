@@ -114,11 +114,12 @@ export const nl = {
     // Completion photo
     uploadCompletionPhoto: 'Upload bewijs foto',
     completionPhotoRequired: 'Een foto is verplicht om de activiteit af te ronden',
-    completionPhotoHint: 'Pics or it didn\'t happen! 📸',
+    completionPhotoHint: "Pics or it didn't happen! 📸",
     selectPhoto: 'Selecteer foto',
     photoSelected: 'Foto geselecteerd',
     proofPhoto: 'Bewijs foto',
-    activityNotYetFinished: 'Deze activiteit is nog niet afgelopen. Je kunt pas afronden nadat de activiteit heeft plaatsgevonden.',
+    activityNotYetFinished:
+        'Deze activiteit is nog niet afgelopen. Je kunt pas afronden nadat de activiteit heeft plaatsgevonden.',
 
     // Co-organizers
     coOrganizers: 'Mede-organisatoren',
