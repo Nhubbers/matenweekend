@@ -10,7 +10,7 @@ services:
       - ./pb_migrations:/pb/pb_migrations
     expose:
       - 8080
-    command: /pb/pocketbase serve --http=0.0.0.0:8080
+    command: /pb/pocketbase --dev serve --http=0.0.0.0:8080
     networks:
       - matenweekend
     healthcheck:
