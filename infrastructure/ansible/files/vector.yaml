@@ -12,11 +12,37 @@ transforms:
       - docker
     condition: '.container_name == "pocketbase" || .container_name == "caddy"'
 
+  format_otlp:
+    type: remap
+    inputs:
+      - filter_logs
+    source: |
+      . = {
+        "resourceLogs": [{
+          "resource": {
+            "attributes": [
+              { "key": "service.name", "value": { "stringValue": .container_name } },
+              { "key": "container.id", "value": { "stringValue": .container_id } },
+              { "key": "host.name", "value": { "stringValue": .host } }
+            ]
+          },
+          "scopeLogs": [{
+            "logRecords": [{
+              "timeUnixNano": to_unix_timestamp!(.timestamp, "nanoseconds"),
+              "body": { "stringValue": .message },
+              "attributes": [
+                { "key": "stream", "value": { "stringValue": .stream } }
+              ]
+            }]
+          }]
+        }]
+      }
+
 sinks:
   logfire:
     type: opentelemetry
     inputs:
-      - filter_logs
+      - format_otlp
     protocol:
       type: "http"
       uri: "https://logfire-eu.pydantic.dev"
