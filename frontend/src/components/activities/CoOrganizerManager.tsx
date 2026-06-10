@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Avatar } from '@/components/common';
+import { Avatar, BottomSheet } from '@/components/common';
 import { useToast } from '@/contexts/ToastContext';
 import { useCoOrganizers } from '@/hooks/useCoOrganizers';
 import { getDisplayName } from '@/lib/utils';
@@ -109,46 +109,43 @@ export function CoOrganizerManager({ activity, isCreator, onUpdate }: CoOrganize
             )}
 
             {/* Add Co-Organizer Modal */}
-            {showAddModal && (
-                <div className="modal modal-open">
-                    <div className="modal-box">
-                        <h3 className="font-bold text-lg mb-4">{nl.addCoOrganizer}</h3>
-
-                        {loadingUsers ? (
-                            <div className="flex justify-center py-4">
-                                <span className="loading loading-spinner loading-md" />
-                            </div>
-                        ) : availableUsers.length === 0 ? (
-                            <p className="text-base-content/60">{nl.noUsersAvailable}</p>
-                        ) : (
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
-                                {availableUsers.map((user) => (
-                                    <button
-                                        key={user.id}
-                                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 transition-colors"
-                                        onClick={() => handleAddCoOrganizer(user.id)}
-                                        disabled={loading}
-                                    >
-                                        <Avatar user={user} size="sm" />
-                                        <span>{getDisplayName(user)}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="modal-action">
+            <BottomSheet
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title={nl.addCoOrganizer}
+            >
+                {loadingUsers ? (
+                    <div className="flex justify-center py-4">
+                        <span className="loading loading-spinner loading-md" />
+                    </div>
+                ) : availableUsers.length === 0 ? (
+                    <p className="text-base-content/60">{nl.noUsersAvailable}</p>
+                ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {availableUsers.map((user) => (
                             <button
-                                className="btn"
-                                onClick={() => setShowAddModal(false)}
+                                key={user.id}
+                                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 transition-colors text-left"
+                                onClick={() => handleAddCoOrganizer(user.id)}
                                 disabled={loading}
                             >
-                                {nl.close}
+                                <Avatar user={user} size="sm" />
+                                <span>{getDisplayName(user)}</span>
                             </button>
-                        </div>
+                        ))}
                     </div>
-                    <div className="modal-backdrop" onClick={() => setShowAddModal(false)} />
+                )}
+
+                <div className="flex justify-end mt-4">
+                    <button
+                        className="btn btn-ghost"
+                        onClick={() => setShowAddModal(false)}
+                        disabled={loading}
+                    >
+                        {nl.close}
+                    </button>
                 </div>
-            )}
+            </BottomSheet>
         </div>
     );
 }

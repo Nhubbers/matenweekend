@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { BottomSheet } from './BottomSheet';
 import { nl } from '@/lib/translations';
 
 interface ConfirmDialogProps {
@@ -22,16 +22,6 @@ export function ConfirmDialog({
     onCancel,
     variant = 'default',
 }: ConfirmDialogProps) {
-    const dialogRef = useRef<HTMLDialogElement>(null);
-
-    useEffect(() => {
-        if (isOpen) {
-            dialogRef.current?.showModal();
-        } else {
-            dialogRef.current?.close();
-        }
-    }, [isOpen]);
-
     const getBtnClass = () => {
         switch (variant) {
             case 'danger':
@@ -44,25 +34,19 @@ export function ConfirmDialog({
     };
 
     return (
-        <dialog ref={dialogRef} className="modal" onClose={onCancel}>
-            <div className="modal-box">
-                <h3 className="font-bold text-lg">{title}</h3>
-                <p className="py-4">{message}</p>
-                <div className="modal-action">
-                    <button className="btn btn-ghost" onClick={onCancel}>
-                        {cancelLabel}
-                    </button>
-                    <button
-                        className={`btn ${getBtnClass()}`}
-                        onClick={onConfirm}
-                    >
-                        {confirmLabel}
-                    </button>
-                </div>
+        <BottomSheet isOpen={isOpen} onClose={onCancel} title={title}>
+            <p className="py-3 text-base-content/80">{message}</p>
+            <div className="flex justify-end gap-2 mt-4">
+                <button className="btn btn-ghost" onClick={onCancel}>
+                    {cancelLabel}
+                </button>
+                <button
+                    className={`btn ${getBtnClass()}`}
+                    onClick={onConfirm}
+                >
+                    {confirmLabel}
+                </button>
             </div>
-            <form method="dialog" className="modal-backdrop">
-                <button onClick={onCancel}>close</button>
-            </form>
-        </dialog>
+        </BottomSheet>
     );
 }

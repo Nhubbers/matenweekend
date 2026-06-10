@@ -149,11 +149,14 @@ export function ActivityFormModal({ isOpen, onClose, mode, activity, onSuccess }
     };
 
     return (
-        <dialog ref={dialogRef} className="modal" onClose={handleClose}>
-            <div className="modal-box max-w-md rounded-2xl shadow-2xl p-6">
+        <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle backdrop-blur-xs transition-all duration-300" onClose={handleClose}>
+            <div className="modal-box bg-base-100/95 backdrop-blur-md border border-base-content/10 max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+                {/* Grab handle for bottom sheet on mobile */}
+                <div className="w-12 h-1.5 bg-base-content/20 rounded-full mx-auto mb-4 sm:hidden cursor-pointer" onClick={handleClose} />
+
                 <form method="dialog">
                     <button
-                        className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                        className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 sm:flex hidden"
                         onClick={handleClose}
                     >
                         ✕
@@ -289,7 +292,7 @@ export function ActivityFormModal({ isOpen, onClose, mode, activity, onSuccess }
                     </div>
                 </form>
             </div>
-            <form method="dialog" className="modal-backdrop">
+            <form method="dialog" className="modal-backdrop bg-black/40">
                 <button onClick={handleClose}>close</button>
             </form>
         </dialog>
