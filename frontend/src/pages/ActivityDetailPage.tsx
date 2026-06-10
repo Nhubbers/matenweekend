@@ -17,6 +17,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useParticipations } from '@/hooks/useParticipations';
 import { useActivities } from '@/hooks/useActivities';
 import { useActivity } from '@/hooks/useActivity';
+import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { getCompletionImageUrl } from '@/lib/utils';
 import { nl } from '@/lib/translations';
 import type { Activity, User } from '@/types';
@@ -28,6 +29,7 @@ export function ActivityDetailPage() {
     const toast = useToast();
 
     const { activity, loading, error, setActivity } = useActivity(id);
+    useSwipeBack();
     const [actionLoading, setActionLoading] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [reopenConfirm, setReopenConfirm] = useState(false);
