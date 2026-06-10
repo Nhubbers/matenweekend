@@ -20,6 +20,7 @@ import { useActivity } from '@/hooks/useActivity';
 import { useSwipeBack } from '@/hooks/useSwipeBack';
 import { getCompletionImageUrl } from '@/lib/utils';
 import { nl } from '@/lib/translations';
+import { haptics } from '@/lib/haptics';
 import type { Activity, User } from '@/types';
 
 export function ActivityDetailPage() {
@@ -79,10 +80,12 @@ export function ActivityDetailPage() {
             setActionLoading(true);
             await join();
             toast.success('Je doet mee! 🎉');
+            haptics.success();
         } catch (err: unknown) {
             console.error('Failed to join:', err);
             const message = err instanceof Error ? err.message : nl.cannotJoinYourOwn;
             toast.error(message);
+            haptics.error();
         } finally {
             setActionLoading(false);
         }
@@ -93,9 +96,11 @@ export function ActivityDetailPage() {
             setActionLoading(true);
             await leave();
             toast.success('Je bent afgemeld.');
+            haptics.medium();
         } catch (err) {
             console.error('Failed to leave:', err);
             toast.error('Afmelden mislukt.');
+            haptics.error();
         } finally {
             setActionLoading(false);
         }
@@ -156,6 +161,7 @@ export function ActivityDetailPage() {
 
         if (!completionImage) {
             toast.warning(nl.completionPhotoRequired);
+            haptics.medium();
             return;
         }
 
@@ -174,9 +180,11 @@ export function ActivityDetailPage() {
             setCompletionImage(null);
             setCompletionImagePreview(null);
             toast.success('Activiteit succesvol afgerond! 🏆');
+            haptics.success();
         } catch (err) {
             console.error('Failed to complete:', err);
             toast.error(err instanceof Error ? err.message : 'Afronden mislukt');
+            haptics.error();
         } finally {
             setActionLoading(false);
         }
@@ -190,9 +198,11 @@ export function ActivityDetailPage() {
             const updated = await completeActivity(activity, undefined, isAdmin);
             setActivity({ ...activity, ...updated, status: 'completed' });
             toast.success('Activiteit afgerond zonder deelnemers.');
+            haptics.success();
         } catch (err) {
             console.error('Failed to complete:', err);
             toast.error('Afronden mislukt');
+            haptics.error();
         } finally {
             setActionLoading(false);
             setCompleteConfirm(false);

@@ -7,6 +7,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { pb } from '@/lib/pocketbase';
 import { nl } from '@/lib/translations';
 import { cn } from '@/lib/utils';
+import { haptics } from '@/lib/haptics';
 import type { ActivityFilter, Participation, Activity } from '@/types';
 
 interface ActivityListProps {
@@ -86,10 +87,12 @@ export function ActivityList({
                 newMap.set(activityId, [...existing, participation]);
                 return newMap;
             });
+            haptics.success();
         } catch (err: unknown) {
             console.error('Failed to join:', err);
             const message = err instanceof Error ? err.message : nl.cannotJoinYourOwn;
             toast.error(message);
+            haptics.error();
         } finally {
             setActionLoading(null);
         }
@@ -115,8 +118,10 @@ export function ActivityList({
                 newMap.set(activityId, existing.filter((p) => p.id !== participationId));
                 return newMap;
             });
+            haptics.medium();
         } catch (err) {
             console.error('Failed to leave:', err);
+            haptics.error();
         } finally {
             setActionLoading(null);
         }
