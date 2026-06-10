@@ -42,12 +42,8 @@ export function ActivityList({
         const fetchParticipations = async () => {
             if (activities.length === 0) return;
 
-            const activityIds = activities.map((a) => a.id);
-            const filterQuery = activityIds.map((id) => `activity = "${id}"`).join(' || ');
-
             try {
                 const participations = await pb.collection('participations').getFullList<Participation>({
-                    filter: filterQuery,
                     expand: 'user',
                 });
 
