@@ -1,12 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-    formatDate,
-    formatDateRange,
-    getDisplayName,
-    getStatusBadgeClass,
-    getStatusLabel,
-} from '@/lib/utils';
-import type { User, Activity } from '@/types';
+import { formatDate, formatDateRange, getDisplayName, getStatusBadgeClass, getStatusLabel } from '@/lib/utils';
+import type { User } from '@/types';
 
 describe('Utility Functions', () => {
     describe('formatDate', () => {
@@ -60,7 +54,7 @@ describe('Utility Functions', () => {
         });
 
         it('should return correct badge class for cancelled', () => {
-            expect(getStatusBadgeClass('badge-error'));
+            expect(getStatusBadgeClass('cancelled')).toBe('badge-error');
         });
     });
 

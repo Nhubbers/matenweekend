@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
 import { pb } from '@/lib/pocketbase';
+import { getErrorMessage } from '@/lib/errors';
 import { nl } from '@/lib/translations';
 import { formatDateForInput } from '@/lib/utils';
 import type { Activity, User } from '@/types';
@@ -138,7 +139,7 @@ export function ActivityFormModal({ isOpen, onClose, mode, activity, onSuccess }
             }
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Er is een fout opgetreden');
+            setError(getErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -149,10 +150,17 @@ export function ActivityFormModal({ isOpen, onClose, mode, activity, onSuccess }
     };
 
     return (
-        <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle backdrop-blur-xs transition-all duration-300" onClose={handleClose}>
+        <dialog
+            ref={dialogRef}
+            className="modal modal-bottom sm:modal-middle backdrop-blur-xs transition-all duration-300"
+            onClose={handleClose}
+        >
             <div className="modal-box bg-base-100/95 backdrop-blur-md border border-base-content/10 max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                 {/* Grab handle for bottom sheet on mobile */}
-                <div className="w-12 h-1.5 bg-base-content/20 rounded-full mx-auto mb-4 sm:hidden cursor-pointer" onClick={handleClose} />
+                <div
+                    className="w-12 h-1.5 bg-base-content/20 rounded-full mx-auto mb-4 sm:hidden cursor-pointer"
+                    onClick={handleClose}
+                />
 
                 <form method="dialog">
                     <button
@@ -199,7 +207,9 @@ export function ActivityFormModal({ isOpen, onClose, mode, activity, onSuccess }
                                 onChange={(e) => setFormData({ ...formData, creator: e.target.value })}
                                 required
                             >
-                                <option value="" disabled>{nl.selectUser}</option>
+                                <option value="" disabled>
+                                    {nl.selectUser}
+                                </option>
                                 {users.map((u) => (
                                     <option key={u.id} value={u.id}>
                                         {u.name || u.email}

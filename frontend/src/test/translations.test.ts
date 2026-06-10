@@ -16,7 +16,7 @@ describe('Translations Completeness', () => {
     });
 
     it('should not contain any empty translation values', () => {
-        Object.entries(nl).forEach(([key, value]) => {
+        Object.entries(nl).forEach(([_, value]) => {
             expect(value).toBeDefined();
             expect(typeof value).toBe('string');
             expect(value.trim().length).toBeGreaterThan(0);

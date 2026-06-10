@@ -17,6 +17,8 @@ describe('ICS Calendar Generation', () => {
             max_participants: 20,
             creator: 'user-1',
             co_organizers: [],
+            image: '',
+            completion_image: '',
             created: '2026-06-10T12:00:00.000Z',
             updated: '2026-06-10T12:00:00.000Z',
             collectionId: 'activities',
