@@ -9,4 +9,5 @@ export { ActivityDetailHeader } from './ActivityDetailHeader';
 export { ActivityDetailDescription } from './ActivityDetailDescription';
 export { ActivityCompletionMode } from './ActivityCompletionMode';
 export { ActivityManageActions } from './ActivityManageActions';
+export { ActivityCardSkeleton } from './ActivityCardSkeleton';
 

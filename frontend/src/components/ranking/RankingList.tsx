@@ -1,5 +1,6 @@
 import { RankingItem } from './RankingItem';
-import { LoadingSpinner, EmptyState, ErrorMessage } from '@/components/common';
+import { RankingItemSkeleton } from './RankingItemSkeleton';
+import { EmptyState, ErrorMessage } from '@/components/common';
 import type { UserRanking } from '@/types';
 
 interface RankingListProps {
@@ -12,8 +13,12 @@ interface RankingListProps {
 export function RankingList({ rankings, loading, error, onUserClick }: RankingListProps) {
     if (loading) {
         return (
-            <div className="flex justify-center py-12">
-                <LoadingSpinner size="lg" />
+            <div className="space-y-3 animate-pulse">
+                <RankingItemSkeleton />
+                <RankingItemSkeleton />
+                <RankingItemSkeleton />
+                <RankingItemSkeleton />
+                <RankingItemSkeleton />
             </div>
         );
     }

@@ -1,5 +1,6 @@
 import { NewsCard } from './NewsCard';
-import { LoadingSpinner, EmptyState, ErrorMessage } from '@/components/common';
+import { NewsCardSkeleton } from './NewsCardSkeleton';
+import { EmptyState, ErrorMessage } from '@/components/common';
 import { nl } from '@/lib/translations';
 import type { News } from '@/types';
 
@@ -12,8 +13,15 @@ interface NewsListProps {
 export function NewsList({ news, loading, error }: NewsListProps) {
     if (loading) {
         return (
-            <div className="flex justify-center py-12">
-                <LoadingSpinner size="lg" />
+            <div className="space-y-4 animate-pulse">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                    <span>📢</span> {nl.news}
+                </h2>
+                <div className="space-y-3">
+                    <NewsCardSkeleton />
+                    <NewsCardSkeleton />
+                    <NewsCardSkeleton />
+                </div>
             </div>
         );
     }

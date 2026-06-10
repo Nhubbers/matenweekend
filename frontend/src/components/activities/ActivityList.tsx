@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ActivityCard } from './ActivityCard';
-import { LoadingSpinner, EmptyState, ErrorMessage } from '@/components/common';
+import { ActivityCardSkeleton } from './ActivityCardSkeleton';
+import { EmptyState, ErrorMessage } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { pb } from '@/lib/pocketbase';
@@ -127,8 +128,10 @@ export function ActivityList({
 
     if (loading) {
         return (
-            <div className="flex justify-center py-12">
-                <LoadingSpinner size="lg" />
+            <div className="grid gap-4 animate-pulse">
+                <ActivityCardSkeleton />
+                <ActivityCardSkeleton />
+                <ActivityCardSkeleton />
             </div>
         );
     }
