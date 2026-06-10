@@ -398,7 +398,95 @@ onRecordAfterCreateSuccess((e) => {
 
         console.log(`Sent new activity email to ${recipients.length} users.`);
 
-    } catch (err) {
+        } catch (err) {
         console.log('Error sending new activity emails: ' + err);
-    }
-}, 'activities');
+        }
+        }, 'activities');
+
+
+        // ============================================
+        // HOOK 9: Scheduled task to send completion reminders
+        // ============================================
+        // Runs every hour at the top of the hour
+        cronAdd('activityCompletionReminder', '0 * * * *', () => {
+        console.log('[Cron] Checking for activities that need a completion reminder...');
+
+        try {
+        const now = new Date();
+        const nowIso = now.toISOString();
+
+        // Find open activities that have ended and haven't had a reminder sent
+        // Note: start_time < now is the fallback if end_time is null
+        const overdueActivities = $app.findRecordsByFilter(
+            'activities',
+            "status = 'open' && reminder_sent != true && (end_time < '" + nowIso + "' || (end_time = '' && start_time < '" + nowIso + "'))"
+        );
+
+        if (overdueActivities.length === 0) {
+            console.log('[Cron] No overdue activities found.');
+            return;
+        }
+
+        const appName = $app.settings().meta.appName || 'Matenweekend';
+        const senderAddress = $app.settings().meta.senderAddress;
+        const senderName = $app.settings().meta.senderName || appName;
+        let appUrl = $app.settings().meta.appUrl || 'https://matenweekend.nl';
+
+        overdueActivities.forEach((activity) => {
+            const activityTitle = activity.get('title');
+            const creatorId = activity.get('creator');
+            const coOrganizers = activity.get('co_organizers') || [];
+
+            const recipientsIds = [creatorId];
+            if (Array.isArray(coOrganizers)) {
+                coOrganizers.forEach(id => {
+                    if (id && recipientsIds.indexOf(id) === -1) recipientsIds.push(id);
+                });
+            }
+
+            recipientsIds.forEach((userId) => {
+                try {
+                    const user = $app.findRecordById('users', userId);
+                    const emailAddr = user.get('email');
+                    if (!emailAddr) return;
+
+                    const activityUrl = `${appUrl}/activities/${activity.id}`;
+
+                    const email = new MailerMessage({
+                        from: {
+                            address: senderAddress,
+                            name: senderName,
+                        },
+                        to: [{ address: emailAddr }],
+                        subject: `Herinnering: Activiteit voltooien - ${activityTitle}`,
+                        html: `
+                            <h2>Herinnering: Voltooi je activiteit!</h2>
+                            <p>Beste organisator,</p>
+                            <p>De activiteit <strong>"${activityTitle}"</strong> is afgelopen, maar nog niet gemarkeerd als voltooid.</p>
+                            <p>Vergeet niet om de activiteit af te ronden in de app, zodat de punten kunnen worden toegekend aan alle deelnemers!</p>
+                            <p>
+                                <a href="${activityUrl}" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                    Activiteit nu afronden
+                                </a>
+                            </p>
+                            <p>Bedankt voor het organiseren!</p>
+                            <p><small>Dit is een automatische herinnering van ${appName}.</small></p>
+                        `,
+                    });
+
+                    $app.newMailClient().send(email);
+                } catch (err) {
+                    console.log(`[Cron] Error sending reminder to user ${userId}: ` + err);
+                }
+            });
+
+            // Mark reminder as sent
+            activity.set('reminder_sent', true);
+            $app.save(activity);
+            console.log(`[Cron] Sent completion reminder for activity: ${activityTitle}`);
+        });
+
+        } catch (err) {
+        console.log('[Cron] Error in activityCompletionReminder: ' + err);
+        }
+        });

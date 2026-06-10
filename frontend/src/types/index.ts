@@ -28,6 +28,7 @@ export interface Activity {
     points_creator: number;
     points_organizer_per_participant: number;
     max_participants: number;
+    reminder_sent?: boolean;
     image: string;
     completion_image?: string; // Proof photo uploaded on completion
     created: string;
