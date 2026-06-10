@@ -6,10 +6,18 @@
 
     # PocketBase API and Admin
     handle /_/* {
-        reverse_proxy pocketbase:8080
+        reverse_proxy pocketbase:8080 {
+            transport http {
+                read_timeout 360s
+            }
+        }
     }
     handle /api/* {
-        reverse_proxy pocketbase:8080
+        reverse_proxy pocketbase:8080 {
+            transport http {
+                read_timeout 360s
+            }
+        }
     }
     
     # Frontend
