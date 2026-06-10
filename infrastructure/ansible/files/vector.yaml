@@ -45,7 +45,7 @@ sinks:
       - format_otlp
     protocol:
       type: "http"
-      uri: "https://logfire-eu.pydantic.dev"
+      uri: "https://logfire-eu.pydantic.dev/v1/logs"
       encoding:
         codec: "otlp"
       request:

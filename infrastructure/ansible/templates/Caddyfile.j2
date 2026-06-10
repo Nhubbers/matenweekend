@@ -1,4 +1,9 @@
 {{ domain }} {
+    log {
+        output stdout
+        format json
+    }
+
     # PocketBase API and Admin
     handle /_/* {
         reverse_proxy pocketbase:8080
@@ -14,5 +19,9 @@
 }
 
 portainer.{{ domain }} {
+    log {
+        output stdout
+        format json
+    }
     reverse_proxy portainer:9000
 }

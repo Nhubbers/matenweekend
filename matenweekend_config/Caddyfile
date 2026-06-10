@@ -1,4 +1,9 @@
 matenweekend.nl {
+    log {
+        output stdout
+        format json
+    }
+
     # PocketBase API and Admin
     handle /_/* {
         reverse_proxy pocketbase:8080
@@ -7,16 +12,17 @@ matenweekend.nl {
         reverse_proxy pocketbase:8080
     }
     
-    # Frontend (will be added in Phase 3)
+    # Frontend
     handle {
-        # For now, redirect to PocketBase admin
-        # Once frontend is deployed, change this to:
-        # reverse_proxy frontend:80
-        reverse_proxy pocketbase:8080
+        reverse_proxy frontend:80
     }
 }
 
 # Portainer subdomain
 portainer.matenweekend.nl {
+    log {
+        output stdout
+        format json
+    }
     reverse_proxy portainer:9000
 }
