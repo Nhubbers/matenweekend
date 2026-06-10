@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { PageContainer } from '@/components/layout';
 import { ActivityList, CreateActivityModal } from '@/components/activities';
 import { useActivities } from '@/hooks/useActivities';
@@ -6,8 +7,19 @@ import { nl } from '@/lib/translations';
 import type { ActivityFilter } from '@/types';
 
 export function ActivitiesPage() {
-    const [filter, setFilter] = useState<ActivityFilter>('upcoming');
+    const location = useLocation();
+    const [filter, setFilter] = useState<ActivityFilter>(
+        location.state?.showAll ? 'all' : 'upcoming'
+    );
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (location.state?.showAll) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setFilter('all');
+        }
+    }, [location.state]);
+
     const { activities, loading, error, refetch } = useActivities(filter);
 
     return (
