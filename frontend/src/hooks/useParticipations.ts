@@ -58,6 +58,19 @@ export function useParticipations(activityId?: string) {
         setParticipations((prev) => prev.filter((p) => p.id !== myParticipation.id));
     };
 
+    const addParticipant = async (userId: string) => {
+        if (!activityId) return;
+
+        const participation = await pb.collection('participations').create<Participation>({
+            activity: activityId,
+            user: userId,
+        });
+
+        // Refetch to get the expanded user data
+        await fetchParticipations();
+        return participation;
+    };
+
     const removeParticipant = async (participationId: string) => {
         await pb.collection('participations').delete(participationId);
         setParticipations((prev) => prev.filter((p) => p.id !== participationId));
@@ -81,6 +94,7 @@ export function useParticipations(activityId?: string) {
         refetch: fetchParticipations,
         join,
         leave,
+        addParticipant,
         removeParticipant,
         markNoshows,
     };

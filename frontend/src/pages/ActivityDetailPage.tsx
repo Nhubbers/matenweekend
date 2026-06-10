@@ -18,7 +18,7 @@ import {
 } from '@/lib/utils';
 import { downloadActivityIcs } from '@/lib/ics';
 import { nl } from '@/lib/translations';
-import type { Activity } from '@/types';
+import type { Activity, User } from '@/types';
 
 export function ActivityDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -33,6 +33,7 @@ export function ActivityDetailPage() {
     const [reopenConfirm, setReopenConfirm] = useState(false);
     const [completeConfirm, setCompleteConfirm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
 
     // No-show completion mode state
     const [isCompletingMode, setIsCompletingMode] = useState(false);
@@ -49,9 +50,27 @@ export function ActivityDetailPage() {
         isJoined,
         join,
         leave,
+        addParticipant,
         removeParticipant,
         markNoshows,
     } = useParticipations(id);
+
+    // Fetch all users if admin
+    useEffect(() => {
+        if (isAdmin) {
+            const fetchUsers = async () => {
+                try {
+                    const result = await pb.collection('users').getFullList<User>({
+                        sort: 'name',
+                    });
+                    setAllUsers(result);
+                } catch (err) {
+                    console.error('Failed to fetch users:', err);
+                }
+            };
+            fetchUsers();
+        }
+    }, [isAdmin]);
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -389,6 +408,8 @@ export function ActivityDetailPage() {
                 participations={participations}
                 maxParticipants={activity.max_participants}
                 onRemove={removeParticipant}
+                onAdd={addParticipant}
+                allUsers={allUsers}
                 showRemoveButton={isAdmin && !isCompletingMode}
                 isCompletingActivity={isCompletingMode}
                 localNoshows={localNoshows}

@@ -240,7 +240,11 @@ onRecordCreateRequest((e) => {
     const authRecord = e.auth;
 
     if (authRecord) {
-        record.set('user', authRecord.id);
+        // If user is NOT an admin, force them as participant.
+        // If user IS an admin, only set user if it's not already provided.
+        if (!authRecord.getBool('isAdmin') || !record.get('user')) {
+            record.set('user', authRecord.id);
+        }
     }
 
     e.next();
