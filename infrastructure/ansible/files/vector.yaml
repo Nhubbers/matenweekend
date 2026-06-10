@@ -1,0 +1,22 @@
+sources:
+  docker:
+    type: docker_logs
+    exclude_containers:
+      - "vector"
+    auto_partial_merge: true
+
+transforms:
+  filter_logs:
+    type: filter
+    inputs:
+      - docker
+    condition: '.container_name == "pocketbase" || .container_name == "caddy"'
+
+sinks:
+  logfire:
+    type: opentelemetry
+    inputs:
+      - filter_logs
+    endpoint: "https://logfire-eu.pydantic.dev"
+    headers:
+      Authorization: "Bearer ${LOGFIRE_TOKEN}"

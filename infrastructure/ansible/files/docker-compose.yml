@@ -56,6 +56,22 @@ services:
     networks:
       - matenweekend
 
+  vector:
+    image: timberio/vector:0.44.0-alpine
+    container_name: vector
+    restart: unless-stopped
+    environment:
+      - LOGFIRE_TOKEN
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+    depends_on:
+      - pocketbase
+      - caddy
+    networks:
+      - matenweekend
+
 networks:
   matenweekend:
     driver: bridge
@@ -64,3 +80,4 @@ volumes:
   caddy_data:
   caddy_config:
   portainer_data:
+

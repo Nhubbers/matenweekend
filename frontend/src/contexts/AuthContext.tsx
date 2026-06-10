@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import { pb } from '@/lib/pocketbase';
 import type { User } from '@/types';
 
@@ -67,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        if (user) {
+            Sentry.setUser({
+                id: user.id,
+                email: user.email,
+                username: user.name || user.email,
+            });
+        } else {
+            Sentry.setUser(null);
+        }
+    }, [user]);
 
     const login = async (email: string, password: string) => {
         const authData = await pb.collection('users').authWithPassword(email, password);

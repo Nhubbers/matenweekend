@@ -109,11 +109,18 @@
         dest: "{{ project_dir }}/docker-compose.yml"
         mode: '0644'
 
+    - name: Copy vector.yaml
+      copy:
+        src: files/vector.yaml
+        dest: "{{ project_dir }}/vector.yaml"
+        mode: '0644'
+
     - name: Copy Caddyfile
       template:
         src: templates/Caddyfile.j2
         dest: "{{ project_dir }}/Caddyfile"
         mode: '0644'
+
 
     - name: Copy PocketBase hooks
       copy:
@@ -142,7 +149,7 @@
         chdir: "{{ project_dir }}"
 
     - name: Pull other Docker images
-      command: docker compose pull caddy portainer
+      command: docker compose pull caddy portainer vector
       args:
         chdir: "{{ project_dir }}"
       ignore_errors: yes

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import { nl } from '@/lib/translations';
 
 interface Props {
@@ -22,6 +23,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('Uncaught error in ErrorBoundary:', error, errorInfo);
+        Sentry.captureException(error, {
+            extra: {
+                componentStack: errorInfo.componentStack,
+            },
+        });
     }
 
     private handleRetry = () => {
@@ -39,10 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         <p className="text-sm text-base-content/70">
                             {this.state.error?.message || 'Er is een onverwachte fout opgetreden.'}
                         </p>
-                        <button
-                            onClick={this.handleRetry}
-                            className="btn btn-primary btn-wide rounded-xl shadow-md"
-                        >
+                        <button onClick={this.handleRetry} className="btn btn-primary btn-wide rounded-xl shadow-md">
                             {nl.tryAgain}
                         </button>
                     </div>
