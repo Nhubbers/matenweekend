@@ -14,23 +14,12 @@ export function PointsForm() {
     const [points, setPoints] = useState<string | number>('');
     const [reason, setReason] = useState('');
 
-    // Fetch all users by getting all point transactions and extracting unique users
+    // Fetch all users directly from the users collection
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const transactions = await pb.collection('point_transactions').getFullList({
-                    expand: 'user',
-                });
-
-                const userMap = new Map<string, User>();
-                transactions.forEach((tx) => {
-                    const user = tx.expand?.user as User | undefined;
-                    if (user && !userMap.has(user.id)) {
-                        userMap.set(user.id, user);
-                    }
-                });
-
-                setUsers(Array.from(userMap.values()));
+                const allUsers = await pb.collection('users').getFullList<User>();
+                setUsers(allUsers);
             } catch (err) {
                 console.error('Failed to fetch users:', err);
             } finally {

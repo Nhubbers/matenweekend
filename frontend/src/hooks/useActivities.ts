@@ -2,7 +2,18 @@ import { useState, useCallback, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
 import type { Activity, ActivityFilter, CreateActivityData } from '@/types';
 
-type UpdateActivityData = Partial<Pick<Activity, 'title' | 'description' | 'start_time' | 'end_time'>> & {
+type UpdateActivityData = Partial<
+    Pick<
+        Activity,
+        | 'title'
+        | 'description'
+        | 'start_time'
+        | 'end_time'
+        | 'points_participant'
+        | 'points_creator'
+        | 'points_organizer_per_participant'
+    >
+> & {
     image?: File;
 };
 
@@ -60,7 +71,9 @@ export function useActivities(filter: ActivityFilter = 'all') {
             formData.append('image', data.image);
         }
 
-        const activity = await pb.collection('activities').create<Activity>(formData);
+        const activity = await pb.collection('activities').create<Activity>(formData, {
+            expand: 'creator,co_organizers',
+        });
         setActivities((prev) => [activity, ...prev]);
         return activity;
     };
@@ -86,10 +99,19 @@ export function useActivities(filter: ActivityFilter = 'all') {
         if (data.start_time) formData.append('start_time', data.start_time);
         if (data.end_time) formData.append('end_time', data.end_time);
         if (data.image) formData.append('image', data.image);
+        if (data.points_participant !== undefined) {
+            formData.append('points_participant', data.points_participant.toString());
+        }
+        if (data.points_creator !== undefined) {
+            formData.append('points_creator', data.points_creator.toString());
+        }
+        if (data.points_organizer_per_participant !== undefined) {
+            formData.append('points_organizer_per_participant', data.points_organizer_per_participant.toString());
+        }
 
         const updated = await pb.collection('activities').update<Activity>(id, formData);
         setActivities((prev) =>
-            prev.map((a) => (a.id === id ? { ...a, ...updated } : a))
+            prev.map((a) => (a.id === id ? { ...a, ...updated, expand: a.expand } : a))
         );
         return updated;
     };
@@ -112,7 +134,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
 
         const updated = await pb.collection('activities').update<Activity>(activity.id, formData);
         setActivities((prev) =>
-            prev.map((a) => (a.id === activity.id ? { ...a, status: updated.status } : a))
+            prev.map((a) => (a.id === activity.id ? { ...a, ...updated, expand: a.expand } : a))
         );
         return updated;
     };

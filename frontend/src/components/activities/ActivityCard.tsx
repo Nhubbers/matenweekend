@@ -3,6 +3,7 @@ import { Avatar } from '@/components/common';
 import { formatDateRange, getActivityImageUrl, getDisplayName, getStatusBadgeClass, getStatusLabel, cn } from '@/lib/utils';
 import { downloadActivityIcs } from '@/lib/ics';
 import { nl } from '@/lib/translations';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Activity, Participation } from '@/types';
 
 interface ActivityCardProps {
@@ -22,12 +23,17 @@ export function ActivityCard({
     onLeave,
     loading,
 }: ActivityCardProps) {
+    const { user } = useAuth();
     const creator = activity.expand?.creator;
     const imageUrl = getActivityImageUrl(activity, '400x300');
     const participantCount = participations.length;
     const maxParticipants = activity.max_participants || 0;
     const isFull = maxParticipants > 0 && participantCount >= maxParticipants;
     const isOpen = activity.status === 'open';
+
+    const isCreator = user?.id === activity.creator;
+    const isCoOrganizer = user && (activity.co_organizers || []).includes(user.id);
+    const isOrganizer = isCreator || isCoOrganizer;
 
     return (
         <div className="card bg-base-200 shadow-xl">
@@ -86,7 +92,14 @@ export function ActivityCard({
 
                 {isOpen && (
                     <div className="card-actions justify-end mt-2">
-                        {isJoined ? (
+                        {isOrganizer ? (
+                            <button
+                                className="btn btn-ghost btn-sm text-base-content/50 cursor-default"
+                                disabled
+                            >
+                                {isCreator ? 'Organisator' : 'Mede-organisator'}
+                            </button>
+                        ) : isJoined ? (
                             <button
                                 className="btn btn-outline btn-error btn-sm"
                                 onClick={onLeave}

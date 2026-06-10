@@ -25,7 +25,7 @@ export function ProfilePage() {
             }
         };
         fetchUserData();
-    }, [user?.id]); // Only run when user.id changes
+    }, [user, updateUser]); // Only run when user changes
 
     const userRank = rankings.find((r) => r.id === user?.id)?.rank || '-';
 

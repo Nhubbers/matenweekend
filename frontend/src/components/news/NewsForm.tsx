@@ -22,6 +22,7 @@ export function NewsForm({
     const [body, setBody] = useState(initialBody);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTitle(initialTitle);
         setBody(initialBody);
     }, [initialTitle, initialBody]);
