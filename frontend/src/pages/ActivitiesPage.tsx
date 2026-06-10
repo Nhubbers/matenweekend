@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PageContainer } from '@/components/layout';
-import { ActivityList, CreateActivityModal, OverdueAlert } from '@/components/activities';
+import { ActivityList, ActivityFormModal, OverdueAlert } from '@/components/activities';
 import { useActivities } from '@/hooks/useActivities';
 import { nl } from '@/lib/translations';
 import type { ActivityFilter } from '@/types';
@@ -50,7 +50,8 @@ export function ActivitiesPage() {
                 <span className="text-2xl">+</span>
             </button>
 
-            <CreateActivityModal
+            <ActivityFormModal
+                mode="create"
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={() => {

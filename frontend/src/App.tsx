@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header, BottomNav, ProtectedRoute } from '@/components/layout';
 import { OverdueActivitiesBanner } from '@/components/activities';
-import { FirstLoginModal } from '@/components/common';
+import { FirstLoginModal, ErrorBoundary } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LoginPage,
@@ -105,8 +105,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

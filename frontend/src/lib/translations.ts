@@ -128,6 +128,12 @@ export const nl = {
     cannotAddParticipantAsCoOrganizer: 'Verwijder deze gebruiker eerst als deelnemer',
     selectUser: 'Selecteer gebruiker',
     noUsersAvailable: 'Geen gebruikers beschikbaar',
+    noParticipantsYet: 'Nog geen deelnemers',
+    editActivity: 'Activiteit bewerken',
+    organizer: 'Organisator',
+    noCoOrganizers: 'Geen mede-organisatoren',
+    addParticipant: 'Deelnemer toevoegen',
+    noActivitiesInCategory: 'Er zijn nog geen activiteiten in deze categorie.',
 };
 
 export type TranslationKey = keyof typeof nl;

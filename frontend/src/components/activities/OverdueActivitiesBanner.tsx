@@ -43,12 +43,22 @@ export function OverdueActivitiesBanner() {
         fetchOverdue();
 
         // Subscribe to real-time updates on activities to automatically update the banner status
-        const unsubscribePromise = pb.collection('activities').subscribe<Activity>('*', () => {
-            fetchOverdue();
+        let active = true;
+        let unsub: (() => void) | undefined;
+
+        pb.collection('activities').subscribe<Activity>('*', () => {
+            if (active) fetchOverdue();
+        }).then((fn) => {
+            if (active) {
+                unsub = fn;
+            } else {
+                fn();
+            }
         });
 
         return () => {
-            unsubscribePromise.then((unsub) => unsub());
+            active = false;
+            unsub?.();
         };
     }, [user]);
 

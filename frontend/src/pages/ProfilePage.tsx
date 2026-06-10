@@ -1,6 +1,7 @@
 import { PageContainer } from '@/components/layout';
 import { Avatar } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { pb } from '@/lib/pocketbase';
 import { useRanking, useUserTransactions } from '@/hooks/useRanking';
 import { UserPointsHistory } from '@/components/ranking';
@@ -12,6 +13,7 @@ export function ProfilePage() {
     const { user, logout, updateUser } = useAuth();
     const { totalPoints } = useUserTransactions(user?.id);
     const { rankings } = useRanking();
+    const toast = useToast();
 
     // Fetch fresh user data to ensure we have the latest email_notifications value
     useEffect(() => {
@@ -52,9 +54,10 @@ export function ProfilePage() {
 
                                     const updatedUser = await pb.collection('users').update<User>(user.id, formData);
                                     updateUser(updatedUser);
+                                    toast.success('Profielfoto succesvol bijgewerkt! 📸');
                                 } catch (err) {
                                     console.error('Failed to update avatar:', err);
-                                    alert('Kon profielfoto niet uploaden. Probeer het later opnieuw.');
+                                    toast.error('Kon profielfoto niet uploaden. Probeer het later opnieuw.');
                                 }
                             }}
                         />
@@ -89,9 +92,10 @@ export function ProfilePage() {
                                         email_notifications: newValue
                                     });
                                     updateUser(updatedUser);
+                                    toast.success('Voorkeuren opgeslagen.');
                                 } catch (err) {
                                     console.error('Failed to update email preferences:', err);
-                                    alert('Kon instellingen niet opslaan.');
+                                    toast.error('Kon instellingen niet opslaan.');
                                 }
                             }}
                         />

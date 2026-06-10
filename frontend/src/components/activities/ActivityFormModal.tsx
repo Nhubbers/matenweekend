@@ -3,17 +3,20 @@ import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
 import { pb } from '@/lib/pocketbase';
 import { nl } from '@/lib/translations';
-import type { User } from '@/types';
+import { formatDateForInput } from '@/lib/utils';
+import type { Activity, User } from '@/types';
 
-interface CreateActivityModalProps {
+interface ActivityFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess?: () => void;
+    mode: 'create' | 'edit';
+    activity?: Activity; // Required in 'edit' mode
+    onSuccess?: (activity?: Activity) => void;
 }
 
-export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivityModalProps) {
+export function ActivityFormModal({ isOpen, onClose, mode, activity, onSuccess }: ActivityFormModalProps) {
     const dialogRef = useRef<HTMLDialogElement>(null);
-    const { createActivity } = useActivities();
+    const { createActivity, updateActivity } = useActivities();
     const { isAdmin, user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -46,14 +49,34 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
         }
     }, [isOpen, isAdmin]);
 
+    // Initialize/Reset form data based on mode & activity
     useEffect(() => {
         if (isOpen) {
-            setFormData(prev => ({ ...prev, creator: user?.id || '' }));
+            if (mode === 'edit' && activity) {
+                setFormData({
+                    title: activity.title,
+                    description: activity.description,
+                    start_time: formatDateForInput(activity.start_time),
+                    end_time: activity.end_time ? formatDateForInput(activity.end_time) : '',
+                    creator: activity.creator,
+                });
+            } else {
+                setFormData({
+                    title: '',
+                    description: '',
+                    start_time: '',
+                    end_time: '',
+                    creator: user?.id || '',
+                });
+            }
+            setImageFile(null);
+            setImagePreview(null);
+            setError(null);
             dialogRef.current?.showModal();
         } else {
             dialogRef.current?.close();
         }
-    }, [isOpen, user]);
+    }, [isOpen, mode, activity, user]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -76,7 +99,8 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
         const now = new Date();
         const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-        if (start < tomorrow) {
+        // Date validation rules
+        if (mode === 'create' && start < tomorrow) {
             setError('Activiteit moet minimaal morgen plaatsvinden');
             setLoading(false);
             return;
@@ -89,33 +113,32 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
         }
 
         try {
-            await createActivity({
-                ...formData,
-                start_time: new Date(formData.start_time).toISOString(),
-                end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
-                points_participant: 5,
-                points_creator: 5,
-                points_organizer_per_participant: 2,
-                max_participants: 0,
-                image: imageFile || undefined,
-                creator: isAdmin ? formData.creator : undefined,
-            });
-
-            // Reset form
-            setFormData({
-                title: '',
-                description: '',
-                start_time: '',
-                end_time: '',
-                creator: user?.id || '',
-            });
-            setImageFile(null);
-            setImagePreview(null);
-
-            onSuccess?.();
+            if (mode === 'create') {
+                const newAct = await createActivity({
+                    ...formData,
+                    start_time: start.toISOString(),
+                    end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
+                    points_participant: 5,
+                    points_creator: 5,
+                    points_organizer_per_participant: 2,
+                    max_participants: 0,
+                    image: imageFile || undefined,
+                    creator: isAdmin ? formData.creator : undefined,
+                });
+                onSuccess?.(newAct);
+            } else if (mode === 'edit' && activity) {
+                const updated = await updateActivity(activity.id, {
+                    ...formData,
+                    start_time: start.toISOString(),
+                    end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
+                    image: imageFile || undefined,
+                    creator: isAdmin ? formData.creator : undefined,
+                });
+                onSuccess?.(updated);
+            }
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create activity');
+            setError(err instanceof Error ? err.message : 'Er is een fout opgetreden');
         } finally {
             setLoading(false);
         }
@@ -127,7 +150,7 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
 
     return (
         <dialog ref={dialogRef} className="modal" onClose={handleClose}>
-            <div className="modal-box max-w-md">
+            <div className="modal-box max-w-md rounded-2xl shadow-2xl p-6">
                 <form method="dialog">
                     <button
                         className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
@@ -137,22 +160,24 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                     </button>
                 </form>
 
-                <h3 className="font-bold text-lg mb-4">{nl.newActivity}</h3>
+                <h3 className="font-bold text-lg mb-4 text-primary-content">
+                    {mode === 'create' ? nl.newActivity : nl.editActivity}
+                </h3>
 
                 {error && (
-                    <div className="alert alert-error mb-4">
-                        <span>{error}</span>
+                    <div className="alert alert-error mb-4 rounded-xl py-2 px-3">
+                        <span className="text-sm font-semibold">{error}</span>
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">{nl.title} *</span>
+                            <span className="label-text font-bold">{nl.title} *</span>
                         </label>
                         <input
                             type="text"
-                            className="input input-bordered"
+                            className="input input-bordered w-full rounded-xl"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             required
@@ -163,15 +188,15 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                     {isAdmin && (
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text">Organisator *</span>
+                                <span className="label-text font-bold">{nl.organizer} *</span>
                             </label>
                             <select
-                                className="select select-bordered w-full"
+                                className="select select-bordered w-full rounded-xl"
                                 value={formData.creator}
                                 onChange={(e) => setFormData({ ...formData, creator: e.target.value })}
                                 required
                             >
-                                <option value="" disabled>Selecteer een organisator</option>
+                                <option value="" disabled>{nl.selectUser}</option>
                                 {users.map((u) => (
                                     <option key={u.id} value={u.id}>
                                         {u.name || u.email}
@@ -183,10 +208,10 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
 
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">{nl.description} *</span>
+                            <span className="label-text font-bold">{nl.description} *</span>
                         </label>
                         <textarea
-                            className="textarea textarea-bordered h-24"
+                            className="textarea textarea-bordered h-24 rounded-xl"
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             required
@@ -197,11 +222,11 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text">{nl.dateTime} *</span>
+                                <span className="label-text font-bold">{nl.dateTime} *</span>
                             </label>
                             <input
                                 type="datetime-local"
-                                className="input input-bordered w-full"
+                                className="input input-bordered w-full rounded-xl"
                                 value={formData.start_time}
                                 onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                                 required
@@ -210,11 +235,11 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
 
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text">Eindtijd</span>
+                                <span className="label-text font-bold">Eindtijd</span>
                             </label>
                             <input
                                 type="datetime-local"
-                                className="input input-bordered w-full"
+                                className="input input-bordered w-full rounded-xl"
                                 value={formData.end_time}
                                 min={formData.start_time}
                                 onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
@@ -222,38 +247,43 @@ export function CreateActivityModal({ isOpen, onClose, onSuccess }: CreateActivi
                         </div>
                     </div>
 
-
-
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">{nl.image}</span>
+                            <span className="label-text font-bold">
+                                {mode === 'create' ? nl.image : 'Afbeelding wijzigen (optioneel)'}
+                            </span>
                         </label>
                         <input
                             type="file"
-                            className="file-input file-input-bordered"
+                            className="file-input file-input-bordered w-full rounded-xl"
                             accept="image/*"
                             onChange={handleImageChange}
                         />
                         {imagePreview && (
                             <div className="mt-2">
+                                <p className="text-xs mb-1 font-semibold text-base-content/70">
+                                    {mode === 'create' ? 'Voorbeeld:' : 'Nieuwe afbeelding voorbeeld:'}
+                                </p>
                                 <img
                                     src={imagePreview}
                                     alt="Preview"
-                                    className="w-full h-32 object-cover rounded-lg"
+                                    className="w-full h-32 object-cover rounded-xl border border-base-300"
                                 />
                             </div>
                         )}
                     </div>
 
-                    <div className="modal-action">
-                        <button type="button" className="btn btn-ghost" onClick={handleClose}>
+                    <div className="modal-action gap-2 pt-2">
+                        <button type="button" className="btn btn-ghost rounded-xl" onClick={handleClose}>
                             {nl.cancel}
                         </button>
-                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                        <button type="submit" className="btn btn-primary rounded-xl px-6" disabled={loading}>
                             {loading ? (
                                 <span className="loading loading-spinner loading-sm" />
-                            ) : (
+                            ) : mode === 'create' ? (
                                 nl.create
+                            ) : (
+                                nl.save
                             )}
                         </button>
                     </div>

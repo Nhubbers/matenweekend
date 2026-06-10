@@ -25,12 +25,22 @@ export function OverdueAlert({ onViewOverdue, currentFilter }: OverdueAlertProps
         fetchOverdueCount();
 
         // Subscribe to changes
-        const unsubscribe = pb.collection('activities').subscribe('*', () => {
-            fetchOverdueCount();
+        let active = true;
+        let unsub: (() => void) | undefined;
+
+        pb.collection('activities').subscribe('*', () => {
+            if (active) fetchOverdueCount();
+        }).then((fn) => {
+            if (active) {
+                unsub = fn;
+            } else {
+                fn();
+            }
         });
 
         return () => {
-            unsubscribe.then(unsub => unsub());
+            active = false;
+            unsub?.();
         };
     }, []);
 

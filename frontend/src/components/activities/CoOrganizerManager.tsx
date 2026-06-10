@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Avatar } from '@/components/common';
+import { useToast } from '@/contexts/ToastContext';
 import { useCoOrganizers } from '@/hooks/useCoOrganizers';
 import { getDisplayName } from '@/lib/utils';
 import { nl } from '@/lib/translations';
@@ -12,6 +13,7 @@ interface CoOrganizerManagerProps {
 }
 
 export function CoOrganizerManager({ activity, isCreator, onUpdate }: CoOrganizerManagerProps) {
+    const toast = useToast();
     const [showAddModal, setShowAddModal] = useState(false);
     const [availableUsers, setAvailableUsers] = useState<User[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
@@ -41,7 +43,7 @@ export function CoOrganizerManager({ activity, isCreator, onUpdate }: CoOrganize
             onUpdate(updated);
             setShowAddModal(false);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to add co-organizer');
+            toast.error(err instanceof Error ? err.message : 'Failed to add co-organizer');
         }
     };
 
@@ -52,7 +54,7 @@ export function CoOrganizerManager({ activity, isCreator, onUpdate }: CoOrganize
             const updated = await removeCoOrganizer(userId, activity);
             onUpdate(updated);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to remove co-organizer');
+            toast.error(err instanceof Error ? err.message : 'Failed to remove co-organizer');
         }
     };
 

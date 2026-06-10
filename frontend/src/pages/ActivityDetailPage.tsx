@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout';
-import { ParticipantList, EditActivityModal, CoOrganizerManager } from '@/components/activities';
-import { LoadingSpinner, ErrorMessage, Avatar, ConfirmDialog } from '@/components/common';
+import {
+    ParticipantList,
+    ActivityFormModal,
+    CoOrganizerManager,
+    ActivityDetailHeader,
+    ActivityDetailDescription,
+    ActivityCompletionMode,
+    ActivityManageActions,
+} from '@/components/activities';
+import { LoadingSpinner, ErrorMessage, ConfirmDialog } from '@/components/common';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { useParticipations } from '@/hooks/useParticipations';
 import { useActivities } from '@/hooks/useActivities';
-import {
-    formatDateRange,
-    getActivityImageUrl,
-    getCompletionImageUrl,
-    getDisplayName,
-    getStatusBadgeClass,
-    getStatusLabel,
-    cn,
-} from '@/lib/utils';
-import { downloadActivityIcs } from '@/lib/ics';
+import { useActivity } from '@/hooks/useActivity';
+import { getCompletionImageUrl } from '@/lib/utils';
 import { nl } from '@/lib/translations';
 import type { Activity, User } from '@/types';
 
@@ -24,10 +25,9 @@ export function ActivityDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { isAdmin, user } = useAuth();
+    const toast = useToast();
 
-    const [activity, setActivity] = useState<Activity | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { activity, loading, error, setActivity } = useActivity(id);
     const [actionLoading, setActionLoading] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [reopenConfirm, setReopenConfirm] = useState(false);
@@ -72,57 +72,28 @@ export function ActivityDetailPage() {
         }
     }, [isAdmin]);
 
-    useEffect(() => {
-        const fetchActivity = async () => {
-            if (!id) return;
-
-            try {
-                setLoading(true);
-                const result = await pb.collection('activities').getOne<Activity>(id, {
-                    expand: 'creator,co_organizers',
-                });
-                setActivity(result);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to load activity');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchActivity();
-    }, [id]);
-
     const handleJoin = async () => {
         try {
             setActionLoading(true);
             await join();
+            toast.success('Je doet mee! 🎉');
         } catch (err: unknown) {
             console.error('Failed to join:', err);
-            // Show warning to user if join fails (e.g. backend restriction)
             const message = err instanceof Error ? err.message : nl.cannotJoinYourOwn;
-            alert(message);
+            toast.error(message);
         } finally {
             setActionLoading(false);
         }
     };
 
-    // Debugging creator check
-    useEffect(() => {
-        if (activity && user) {
-            console.log('Creator Check Debug:', {
-                userId: user.id,
-                activityCreator: activity.creator,
-                isMatch: user.id === activity.creator
-            });
-        }
-    }, [activity, user]);
-
     const handleLeave = async () => {
         try {
             setActionLoading(true);
             await leave();
+            toast.success('Je bent afgemeld.');
         } catch (err) {
             console.error('Failed to leave:', err);
+            toast.error('Afmelden mislukt.');
         } finally {
             setActionLoading(false);
         }
@@ -132,13 +103,11 @@ export function ActivityDetailPage() {
     const handleStartComplete = () => {
         if (!activity) return;
 
-        // Check if activity has already happened (end_time or start_time must be in the past)
-        // Admins can bypass this check for testing purposes
         const now = new Date();
         const endTime = activity.end_time ? new Date(activity.end_time) : new Date(activity.start_time);
 
         if (endTime > now && !isAdmin) {
-            alert(nl.activityNotYetFinished);
+            toast.warning(nl.activityNotYetFinished);
             return;
         }
 
@@ -157,7 +126,6 @@ export function ActivityDetailPage() {
         setIsCompletingMode(true);
     };
 
-    // Toggle no-show status for a participant
     const handleToggleNoshow = (participationId: string, noshow: boolean) => {
         setLocalNoshows(prev => ({
             ...prev,
@@ -165,18 +133,15 @@ export function ActivityDetailPage() {
         }));
     };
 
-    // Handle completion image selection
     const handleCompletionImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setCompletionImage(file);
-            // Create preview URL
             const previewUrl = URL.createObjectURL(file);
             setCompletionImagePreview(previewUrl);
         }
     };
 
-    // Cancel completion mode
     const handleCancelComplete = () => {
         setIsCompletingMode(false);
         setLocalNoshows({});
@@ -184,13 +149,11 @@ export function ActivityDetailPage() {
         setCompletionImagePreview(null);
     };
 
-    // Confirm completion with no-shows marked
     const handleConfirmComplete = async () => {
         if (!activity) return;
 
-        // Require completion image
         if (!completionImage) {
-            alert(nl.completionPhotoRequired);
+            toast.warning(nl.completionPhotoRequired);
             return;
         }
 
@@ -208,25 +171,26 @@ export function ActivityDetailPage() {
             setLocalNoshows({});
             setCompletionImage(null);
             setCompletionImagePreview(null);
+            toast.success('Activiteit succesvol afgerond! 🏆');
         } catch (err) {
             console.error('Failed to complete:', err);
-            alert(err instanceof Error ? err.message : 'Failed to complete activity');
+            toast.error(err instanceof Error ? err.message : 'Afronden mislukt');
         } finally {
             setActionLoading(false);
         }
     };
 
-    // Handle completing with no participants - no photo needed since there's nothing to prove
     const handleCompleteNoParticipants = async () => {
         if (!activity) return;
 
         try {
             setActionLoading(true);
-            // No photo required for activities with no participants
             const updated = await completeActivity(activity, undefined, isAdmin);
             setActivity({ ...activity, ...updated, status: 'completed' });
+            toast.success('Activiteit afgerond zonder deelnemers.');
         } catch (err) {
             console.error('Failed to complete:', err);
+            toast.error('Afronden mislukt');
         } finally {
             setActionLoading(false);
             setCompleteConfirm(false);
@@ -239,8 +203,10 @@ export function ActivityDetailPage() {
             setActionLoading(true);
             await pb.collection('activities').update(activity.id, { status: 'cancelled' });
             setActivity({ ...activity, status: 'cancelled' });
+            toast.success('Activiteit geannuleerd.');
         } catch (err) {
             console.error('Failed to cancel:', err);
+            toast.error('Annuleren mislukt.');
         } finally {
             setActionLoading(false);
         }
@@ -251,9 +217,11 @@ export function ActivityDetailPage() {
         try {
             setActionLoading(true);
             await pb.collection('activities').delete(activity.id);
+            toast.success('Activiteit verwijderd.');
             navigate('/activities');
         } catch (err) {
             console.error('Failed to delete:', err);
+            toast.error('Verwijderen mislukt.');
         } finally {
             setActionLoading(false);
             setDeleteConfirm(false);
@@ -266,8 +234,10 @@ export function ActivityDetailPage() {
             setActionLoading(true);
             const updated = await reopenActivity(activity);
             setActivity({ ...activity, status: updated.status });
+            toast.success('Activiteit heropend.');
         } catch (err) {
             console.error('Failed to reopen:', err);
+            toast.error('Heropenen mislukt.');
         } finally {
             setActionLoading(false);
             setReopenConfirm(false);
@@ -292,280 +262,133 @@ export function ActivityDetailPage() {
         );
     }
 
-    const creator = activity.expand?.creator;
     const isCreator = user?.id === activity.creator;
     const isCoOrganizer = user && (activity.co_organizers || []).includes(user.id);
     const isOrganizer = isCreator || isCoOrganizer;
     const canManage = isAdmin || isOrganizer;
 
-    const imageUrl = getActivityImageUrl(activity);
     const isOpen = activity.status === 'open';
     const isFull =
         activity.max_participants > 0 && participations.length >= activity.max_participants;
 
-    // Count how many are marked as no-show in local state
-    const noshowCount = Object.values(localNoshows).filter(Boolean).length;
-
     return (
         <PageContainer>
-            <button className="btn btn-ghost btn-sm mb-4" onClick={() => navigate(-1)}>
+            <button className="btn btn-ghost btn-sm mb-4 rounded-xl" onClick={() => navigate(-1)}>
                 ← {nl.back}
             </button>
 
-            {activity.image && (
-                <div className="rounded-lg overflow-hidden mb-4">
-                    <img
-                        src={imageUrl}
-                        alt={activity.title}
-                        className="w-full h-48 object-cover"
-                    />
-                </div>
-            )}
+            <div className="space-y-6">
+                <ActivityDetailHeader activity={activity} />
 
-            <h1 className="text-2xl font-bold mb-2">{activity.title}</h1>
+                <ActivityDetailDescription description={activity.description} />
 
-            <div className="space-y-2 text-base-content/80 mb-4">
-                <div className="flex items-center gap-2">
-                    <span>📅</span>
-                    <span>{formatDateRange(activity.start_time, activity.end_time)}</span>
-                    <button
-                        onClick={() => downloadActivityIcs(activity)}
-                        className="btn btn-ghost btn-xs text-primary tooltip tooltip-right"
-                        data-tip="Zet in agenda"
-                    >
-                        + 📅
-                    </button>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Avatar user={creator} size="sm" />
-                    <span>
-                        {nl.createdBy}: {getDisplayName(creator)}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span>🏷️</span>
-                    <span>Status: </span>
-                    <span className={cn('badge', getStatusBadgeClass(activity.status))}>
-                        {getStatusLabel(activity.status)}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span>⭐</span>
-                    <span>{activity.points_participant} punten voor deelnemers</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span>⭐</span>
-                    <span>{activity.points_creator} punten + {activity.points_organizer_per_participant || 0} per deelnemer voor organisator</span>
-                </div>
-            </div>
+                {/* Co-organizers section */}
+                <CoOrganizerManager
+                    activity={activity}
+                    isCreator={isCreator}
+                    onUpdate={() => {
+                        pb.collection('activities').getOne<Activity>(activity.id, {
+                            expand: 'creator,co_organizers',
+                        }).then(setActivity);
+                    }}
+                />
 
-            <div className="divider" />
-
-            <div className="mb-4">
-                <h2 className="font-semibold mb-2">{nl.description}:</h2>
-                <p className="text-base-content/90 whitespace-pre-wrap">{activity.description}</p>
-            </div>
-
-            {/* Co-organizers section */}
-            <CoOrganizerManager
-                activity={activity}
-                isCreator={isCreator}
-                onUpdate={() => {
-                    // Refetch full activity with expanded relations
-                    pb.collection('activities').getOne<Activity>(activity.id, {
-                        expand: 'creator,co_organizers',
-                    }).then(setActivity);
-                }}
-            />
-
-            {/* Display proof photo for completed activities */}
-            {activity.status === 'completed' && activity.completion_image && (
-                <div className="mb-4">
-                    <h2 className="font-semibold mb-2">📸 {nl.proofPhoto}</h2>
-                    <div className="rounded-lg overflow-hidden">
-                        <img
-                            src={getCompletionImageUrl(activity)}
-                            alt="Bewijs foto"
-                            className="w-full object-cover rounded-lg"
-                        />
-                    </div>
-                </div>
-            )}
-
-            <div className="divider" />
-
-            {/* Completion mode header */}
-            {isCompletingMode && (
-                <div className="alert alert-info mb-4">
-                    <div>
-                        <h3 className="font-bold">🎯 {nl.completingActivity}</h3>
-                        <p className="text-sm">{nl.noshowExplanation}</p>
-                    </div>
-                </div>
-            )}
-
-            <ParticipantList
-                participations={participations}
-                maxParticipants={activity.max_participants}
-                onRemove={removeParticipant}
-                onAdd={addParticipant}
-                allUsers={allUsers}
-                showRemoveButton={isAdmin && !isCompletingMode}
-                isCompletingActivity={isCompletingMode}
-                localNoshows={localNoshows}
-                onToggleNoshow={handleToggleNoshow}
-            />
-
-            {/* Completion mode actions */}
-            {isCompletingMode && (
-                <div className="mt-6 space-y-3">
-                    {noshowCount > 0 && (
-                        <div className="alert alert-warning">
-                            <span>⚠️ {noshowCount} {noshowCount === 1 ? 'deelnemer' : 'deelnemers'} gemarkeerd als no-show. Zij krijgen -{activity.points_participant} strafpunten.</span>
+                {/* Display proof photo for completed activities */}
+                {activity.status === 'completed' && activity.completion_image && (
+                    <div className="bg-base-200/30 border border-base-200 p-5 rounded-2xl shadow-sm">
+                        <h2 className="font-bold text-lg mb-3 text-base-content flex items-center gap-2">📸 {nl.proofPhoto}</h2>
+                        <div className="rounded-xl overflow-hidden max-h-80 border border-base-300">
+                            <img
+                                src={getCompletionImageUrl(activity)}
+                                alt="Bewijs foto"
+                                className="w-full object-cover rounded-xl"
+                                loading="lazy"
+                            />
                         </div>
-                    )}
-
-                    {/* Completion photo upload */}
-                    <div className="card bg-base-200 p-4">
-                        <label className="block font-semibold mb-1">
-                            📸 {nl.uploadCompletionPhoto}
-                        </label>
-                        <p className="text-sm text-base-content/70 mb-3">{nl.completionPhotoHint}</p>
-
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleCompletionImageChange}
-                            className="file-input file-input-bordered w-full"
-                        />
-
-                        {completionImagePreview && (
-                            <div className="mt-3 rounded-lg overflow-hidden">
-                                <img
-                                    src={completionImagePreview}
-                                    alt="Preview"
-                                    className="w-full h-48 object-cover"
-                                />
-                                <p className="text-sm text-success mt-1">✓ {nl.photoSelected}</p>
-                            </div>
-                        )}
-
-                        {!completionImage && (
-                            <p className="text-sm text-error mt-2">* {nl.completionPhotoRequired}</p>
-                        )}
                     </div>
+                )}
 
-                    <div className="flex gap-2">
-                        <button
-                            className="btn btn-success flex-1"
-                            onClick={handleConfirmComplete}
-                            disabled={actionLoading || !completionImage}
-                        >
-                            {actionLoading ? (
-                                <span className="loading loading-spinner loading-sm" />
-                            ) : (
-                                `✅ ${nl.confirmComplete}`
-                            )}
-                        </button>
-                        <button
-                            className="btn btn-ghost"
-                            onClick={handleCancelComplete}
-                            disabled={actionLoading}
-                        >
-                            {nl.cancelComplete}
-                        </button>
-                    </div>
-                </div>
-            )}
+                <div className="divider" />
 
-            {/* Normal join/leave buttons (hidden in completion mode) */}
-            {isOpen && !isCompletingMode && (
-                <div className="mt-6">
-                    {isOrganizer ? (
-                        <button className="btn btn-disabled w-full" disabled>
-                            {isCreator ? nl.youAreTheOrganizer : nl.youAreCoOrganizer}
-                        </button>
-                    ) : isJoined ? (
-                        <button
-                            className="btn btn-outline btn-error w-full"
-                            onClick={handleLeave}
-                            disabled={actionLoading}
-                        >
-                            {actionLoading ? (
-                                <span className="loading loading-spinner loading-sm" />
-                            ) : (
-                                nl.leave
-                            )}
-                        </button>
-                    ) : (
-                        <button
-                            className="btn btn-primary w-full"
-                            onClick={handleJoin}
-                            disabled={actionLoading || isFull}
-                        >
-                            {actionLoading ? (
-                                <span className="loading loading-spinner loading-sm" />
-                            ) : isFull ? (
-                                'Activiteit is vol'
-                            ) : (
-                                nl.join
-                            )}
-                        </button>
-                    )}
-                </div>
-            )}
+                <ParticipantList
+                    participations={participations}
+                    maxParticipants={activity.max_participants}
+                    onRemove={removeParticipant}
+                    onAdd={addParticipant}
+                    allUsers={allUsers}
+                    showRemoveButton={isAdmin && !isCompletingMode}
+                    isCompletingActivity={isCompletingMode}
+                    localNoshows={localNoshows}
+                    onToggleNoshow={handleToggleNoshow}
+                />
 
-            {/* Management buttons (hidden in completion mode) */}
-            {canManage && !isCompletingMode && (
-                <div className="mt-6 space-y-2">
-                    <div className="divider">Beheer</div>
-                    <div className="flex flex-wrap gap-2">
-                        {isOpen && (
-                            <>
-                                <button
-                                    className="btn btn-primary btn-sm"
-                                    onClick={() => setIsEditing(true)}
-                                    disabled={actionLoading}
-                                >
-                                    ✏️ {nl.edit}
-                                </button>
-                                <button
-                                    className="btn btn-success btn-sm"
-                                    onClick={handleStartComplete}
-                                    disabled={actionLoading}
-                                >
-                                    {nl.complete}
-                                </button>
-                                <button
-                                    className="btn btn-warning btn-sm"
-                                    onClick={handleCancel}
-                                    disabled={actionLoading}
-                                >
-                                    {nl.cancel}
-                                </button>
-                            </>
-                        )}
-                        {!isOpen && activity.status === 'completed' && (
-                            <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => setReopenConfirm(true)}
-                                disabled={actionLoading}
-                            >
-                                Heropenen
+                {/* Completion mode actions */}
+                {isCompletingMode && (
+                    <ActivityCompletionMode
+                        activity={activity}
+                        participations={participations}
+                        localNoshows={localNoshows}
+                        onToggleNoshow={handleToggleNoshow}
+                        completionImage={completionImage}
+                        completionImagePreview={completionImagePreview}
+                        onImageChange={handleCompletionImageChange}
+                        onConfirm={handleConfirmComplete}
+                        onCancel={handleCancelComplete}
+                        actionLoading={actionLoading}
+                    />
+                )}
+
+                {/* Normal join/leave buttons (hidden in completion mode) */}
+                {isOpen && !isCompletingMode && (
+                    <div className="mt-6">
+                        {isOrganizer ? (
+                            <button className="btn btn-disabled w-full rounded-xl" disabled>
+                                {isCreator ? nl.youAreTheOrganizer : nl.youAreCoOrganizer}
                             </button>
-                        )}
-                        {isAdmin && (
+                        ) : isJoined ? (
                             <button
-                                className="btn btn-error btn-sm"
-                                onClick={() => setDeleteConfirm(true)}
+                                className="btn btn-outline btn-error w-full rounded-xl"
+                                onClick={handleLeave}
                                 disabled={actionLoading}
                             >
-                                {nl.delete}
+                                {actionLoading ? (
+                                    <span className="loading loading-spinner loading-sm" />
+                                ) : (
+                                    nl.leave
+                                )}
+                            </button>
+                        ) : (
+                            <button
+                                className="btn btn-primary w-full rounded-xl"
+                                onClick={handleJoin}
+                                disabled={actionLoading || isFull}
+                            >
+                                {actionLoading ? (
+                                    <span className="loading loading-spinner loading-sm" />
+                                ) : isFull ? (
+                                    'Activiteit is vol'
+                                ) : (
+                                    nl.join
+                                )}
                             </button>
                         )}
                     </div>
-                </div>
-            )}
+                )}
+
+                {/* Management buttons (hidden in completion mode) */}
+                {canManage && !isCompletingMode && (
+                    <ActivityManageActions
+                        status={activity.status}
+                        actionLoading={actionLoading}
+                        isAdmin={isAdmin}
+                        onEdit={() => setIsEditing(true)}
+                        onComplete={handleStartComplete}
+                        onCancel={handleCancel}
+                        onReopen={() => setReopenConfirm(true)}
+                        onDelete={() => setDeleteConfirm(true)}
+                    />
+                )}
+            </div>
 
             <ConfirmDialog
                 isOpen={deleteConfirm}
@@ -601,12 +424,15 @@ export function ActivityDetailPage() {
             />
 
             {isEditing && (
-                <EditActivityModal
+                <ActivityFormModal
+                    mode="edit"
                     activity={activity}
                     isOpen={isEditing}
                     onClose={() => setIsEditing(false)}
                     onSuccess={(updated) => {
-                        setActivity({ ...activity, ...updated });
+                        if (updated) {
+                            setActivity(updated);
+                        }
                         setIsEditing(false);
                     }}
                 />

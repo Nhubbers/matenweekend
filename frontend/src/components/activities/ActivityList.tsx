@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ActivityCard } from './ActivityCard';
 import { LoadingSpinner, EmptyState, ErrorMessage } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { pb } from '@/lib/pocketbase';
 import { nl } from '@/lib/translations';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ export function ActivityList({
     error,
 }: ActivityListProps) {
     const { user } = useAuth();
+    const toast = useToast();
     const [participationsMap, setParticipationsMap] = useState<Map<string, Participation[]>>(new Map());
     const [joinedMap, setJoinedMap] = useState<Map<string, string>>(new Map());
     const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -90,7 +92,7 @@ export function ActivityList({
         } catch (err: unknown) {
             console.error('Failed to join:', err);
             const message = err instanceof Error ? err.message : nl.cannotJoinYourOwn;
-            alert(message);
+            toast.error(message);
         } finally {
             setActionLoading(null);
         }
@@ -167,7 +169,7 @@ export function ActivityList({
                             isJoined={joinedMap.has(activity.id)}
                             onJoin={() => {
                                 if (user?.id === activity.creator) {
-                                    alert(nl.cannotJoinYourOwn);
+                                    toast.warning(nl.cannotJoinYourOwn);
                                     return;
                                 }
                                 handleJoin(activity.id);
