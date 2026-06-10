@@ -12,6 +12,22 @@ export function AdminActivityList() {
     const [deleteConfirm, setDeleteConfirm] = useState<Activity | null>(null);
     const [completeConfirm, setCompleteConfirm] = useState<Activity | null>(null);
     const [participationsMap, setParticipationsMap] = useState<Map<string, Participation[]>>(new Map());
+    const [users, setUsers] = useState<User[]>([]);
+
+    // Fetch users for organizer selection
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const result = await pb.collection('users').getFullList<User>({
+                    sort: 'name',
+                });
+                setUsers(result);
+            } catch (err) {
+                console.error('Failed to fetch users:', err);
+            }
+        };
+        fetchUsers();
+    }, []);
 
     // Fetch participations for all activities
     useEffect(() => {
@@ -120,6 +136,7 @@ export function AdminActivityList() {
                                 onDelete={() => setDeleteConfirm(activity)}
                                 onUpdate={updateActivity}
                                 loading={actionLoading === activity.id}
+                                users={users}
                             />
                         ))}
                     </div>
@@ -159,14 +176,16 @@ interface ActivityItemProps {
     onDelete: () => void;
     onUpdate: (id: string, data: Partial<Activity> & { image?: File }) => Promise<Activity>;
     loading: boolean;
+    users: User[];
 }
 
-function ActivityItem({ activity, participations, onComplete, onCancel, onDelete, onUpdate, loading }: ActivityItemProps) {
+function ActivityItem({ activity, participations, onComplete, onCancel, onDelete, onUpdate, loading, users }: ActivityItemProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editValues, setEditValues] = useState({
         points_participant: activity.points_participant,
         points_creator: activity.points_creator,
         points_organizer_per_participant: activity.points_organizer_per_participant,
+        creator: activity.creator,
     });
     const [saveLoading, setSaveLoading] = useState(false);
 
@@ -177,10 +196,11 @@ function ActivityItem({ activity, participations, onComplete, onCancel, onDelete
                 points_participant: editValues.points_participant,
                 points_creator: editValues.points_creator,
                 points_organizer_per_participant: editValues.points_organizer_per_participant,
+                creator: editValues.creator,
             });
             setIsEditing(false);
         } catch (err) {
-            console.error('Failed to update points:', err);
+            console.error('Failed to update activity:', err);
         } finally {
             setSaveLoading(false);
         }
@@ -233,6 +253,23 @@ function ActivityItem({ activity, participations, onComplete, onCancel, onDelete
                             onChange={(e) => setEditValues({ ...editValues, points_organizer_per_participant: parseInt(e.target.value) || 0 })}
                         />
                     </div>
+                </div>
+
+                <div className="form-control">
+                    <label className="label py-1">
+                        <span className="label-text text-xs">Organisator</span>
+                    </label>
+                    <select
+                        className="select select-bordered select-sm w-full"
+                        value={editValues.creator}
+                        onChange={(e) => setEditValues({ ...editValues, creator: e.target.value })}
+                    >
+                        {users.map((u) => (
+                            <option key={u.id} value={u.id}>
+                                {u.name || u.email}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="flex justify-end gap-2">

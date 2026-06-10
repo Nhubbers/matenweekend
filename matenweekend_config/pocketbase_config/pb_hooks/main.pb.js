@@ -221,7 +221,11 @@ onRecordCreateRequest((e) => {
     const authRecord = e.auth;
 
     if (authRecord) {
-        record.set('creator', authRecord.id);
+        // If user is NOT an admin, force them as creator.
+        // If user IS an admin, only set creator if it's not already provided.
+        if (!authRecord.getBool('isAdmin') || !record.get('creator')) {
+            record.set('creator', authRecord.id);
+        }
     }
 
     e.next();

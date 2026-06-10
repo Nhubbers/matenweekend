@@ -12,6 +12,7 @@ type UpdateActivityData = Partial<
         | 'points_participant'
         | 'points_creator'
         | 'points_organizer_per_participant'
+        | 'creator'
     >
 > & {
     image?: File;
@@ -66,6 +67,9 @@ export function useActivities(filter: ActivityFilter = 'all') {
         formData.append('points_creator', data.points_creator.toString());
         formData.append('points_organizer_per_participant', data.points_organizer_per_participant.toString());
         formData.append('max_participants', data.max_participants.toString());
+        if (data.creator) {
+            formData.append('creator', data.creator);
+        }
 
         if (data.image) {
             formData.append('image', data.image);
@@ -99,6 +103,7 @@ export function useActivities(filter: ActivityFilter = 'all') {
         if (data.start_time) formData.append('start_time', data.start_time);
         if (data.end_time) formData.append('end_time', data.end_time);
         if (data.image) formData.append('image', data.image);
+        if (data.creator) formData.append('creator', data.creator);
         if (data.points_participant !== undefined) {
             formData.append('points_participant', data.points_participant.toString());
         }
@@ -109,9 +114,11 @@ export function useActivities(filter: ActivityFilter = 'all') {
             formData.append('points_organizer_per_participant', data.points_organizer_per_participant.toString());
         }
 
-        const updated = await pb.collection('activities').update<Activity>(id, formData);
+        const updated = await pb.collection('activities').update<Activity>(id, formData, {
+            expand: 'creator,co_organizers',
+        });
         setActivities((prev) =>
-            prev.map((a) => (a.id === id ? { ...a, ...updated, expand: a.expand } : a))
+            prev.map((a) => (a.id === id ? updated : a))
         );
         return updated;
     };

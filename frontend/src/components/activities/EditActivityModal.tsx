@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useActivities } from '@/hooks/useActivities';
+import { useAuth } from '@/contexts/AuthContext';
+import { pb } from '@/lib/pocketbase';
 import { nl } from '@/lib/translations';
 import { formatDateForInput } from '@/lib/utils';
-import type { Activity } from '@/types';
+import type { Activity, User } from '@/types';
 
 interface EditActivityModalProps {
     activity: Activity;
@@ -14,17 +16,37 @@ interface EditActivityModalProps {
 export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: EditActivityModalProps) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const { updateActivity } = useActivities();
+    const { isAdmin } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [users, setUsers] = useState<User[]>([]);
 
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         start_time: '',
         end_time: '',
+        creator: '',
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+    // Fetch users if admin
+    useEffect(() => {
+        if (isOpen && isAdmin) {
+            const fetchUsers = async () => {
+                try {
+                    const result = await pb.collection('users').getFullList<User>({
+                        sort: 'name',
+                    });
+                    setUsers(result);
+                } catch (err) {
+                    console.error('Failed to fetch users:', err);
+                }
+            };
+            fetchUsers();
+        }
+    }, [isOpen, isAdmin]);
 
     // Initialize form with activity data when opening
     useEffect(() => {
@@ -34,6 +56,7 @@ export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: Edit
                 description: activity.description,
                 start_time: formatDateForInput(activity.start_time),
                 end_time: activity.end_time ? formatDateForInput(activity.end_time) : '',
+                creator: activity.creator,
             });
             // Note: we can't easily preview the existing image here as a File, 
             // but we could show the URL if we wanted. For now, we only preview NEW uploads.
@@ -67,6 +90,7 @@ export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: Edit
                 start_time: new Date(formData.start_time).toISOString(),
                 end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
                 image: imageFile || undefined,
+                creator: isAdmin ? formData.creator : undefined,
             });
 
             setImageFile(null);
@@ -119,6 +143,27 @@ export function EditActivityModal({ activity, isOpen, onClose, onSuccess }: Edit
                             maxLength={200}
                         />
                     </div>
+
+                    {isAdmin && (
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Organisator *</span>
+                            </label>
+                            <select
+                                className="select select-bordered w-full"
+                                value={formData.creator}
+                                onChange={(e) => setFormData({ ...formData, creator: e.target.value })}
+                                required
+                            >
+                                <option value="" disabled>Selecteer een organisator</option>
+                                {users.map((u) => (
+                                    <option key={u.id} value={u.id}>
+                                        {u.name || u.email}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div className="form-control">
                         <label className="label">

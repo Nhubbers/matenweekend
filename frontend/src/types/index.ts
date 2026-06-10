@@ -119,4 +119,5 @@ export interface CreateActivityData {
     points_organizer_per_participant: number;
     max_participants: number;
     image?: File;
+    creator?: string;
 }
