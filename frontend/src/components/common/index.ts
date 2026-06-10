@@ -8,3 +8,4 @@ export { FirstLoginModal } from './FirstLoginModal';
 export { Logo } from './Logo';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Skeleton } from './Skeleton';
+export { PageTransition } from './PageTransition';

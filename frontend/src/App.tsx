@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Header, BottomNav, ProtectedRoute } from '@/components/layout';
 import { OverdueActivitiesBanner } from '@/components/activities';
-import { FirstLoginModal, ErrorBoundary, LoadingSpinner } from '@/components/common';
+import { FirstLoginModal, ErrorBoundary, LoadingSpinner, PageTransition } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -16,12 +16,15 @@ const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(m => ({ defaul
 const AdminPage = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminPage })));
 
 function AppLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   return (
     <div className="h-full flex flex-col bg-base-100 overflow-hidden">
       <Header />
       <OverdueActivitiesBanner />
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {children}
+        <PageTransition key={location.pathname}>
+          {children}
+        </PageTransition>
       </div>
       <BottomNav />
     </div>
