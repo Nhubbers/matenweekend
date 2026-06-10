@@ -14,7 +14,8 @@ const sizeClasses = {
 };
 
 export function Avatar({ user, size = 'md', className }: AvatarProps) {
-    const avatarUrl = getUserAvatarUrl(user);
+    const thumbSize = size === 'sm' ? '100x100' : size === 'md' ? '150x150' : '300x300';
+    const avatarUrl = getUserAvatarUrl(user, thumbSize);
     const displayName = getDisplayName(user);
 
     return (

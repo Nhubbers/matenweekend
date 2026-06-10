@@ -61,11 +61,11 @@ export function getActivityImageUrl(activity: Activity, thumb?: string): string 
 }
 
 // Get user avatar URL
-export function getUserAvatarUrl(user: User | undefined): string | null {
+export function getUserAvatarUrl(user: User | undefined, thumb?: string): string | null {
     if (!user?.avatar) {
         return null;
     }
-    return pb.files.getUrl(user, user.avatar);
+    return pb.files.getUrl(user, user.avatar, thumb ? { thumb } : undefined);
 }
 
 // Get display name for a user (name or email)

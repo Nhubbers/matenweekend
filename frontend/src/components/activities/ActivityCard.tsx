@@ -43,6 +43,7 @@ export function ActivityCard({
                         src={imageUrl}
                         alt={activity.title}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                     />
                 </figure>
             )}
