@@ -1,13 +1,13 @@
-name: Deploy PocketBase Hooks
+name: Deploy PocketBase Config
 
 on:
   push:
     branches: [main]
     paths:
-      - 'matenweekend_config/pocketbase_config/pb_hooks/**'
+      - 'matenweekend_config/pocketbase_config/**'
 
 jobs:
-  deploy-hooks:
+  deploy-backend:
     runs-on: ubuntu-latest
     
     steps:
@@ -22,7 +22,16 @@ jobs:
           REMOTE_USER: root
           SOURCE: matenweekend_config/pocketbase_config/pb_hooks/
           TARGET: /opt/matenweekend/pb_hooks/
+
+      - name: Deploy migrations to server
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: 46.62.164.62
+          REMOTE_USER: root
+          SOURCE: matenweekend_config/pocketbase_config/pb_migrations/
+          TARGET: /opt/matenweekend/pb_migrations/
           SCRIPT_AFTER: |
             cd /opt/matenweekend
             docker compose restart pocketbase
-            echo "PocketBase hooks deployed and restarted successfully"
+            echo "PocketBase config deployed and restarted successfully"

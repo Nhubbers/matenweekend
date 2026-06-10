@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
-import type { PointTransaction, UserRanking, User } from '@/types';
+import type { PointTransaction, UserRanking } from '@/types';
 
 export function useRanking() {
     const [rankings, setRankings] = useState<UserRanking[]>([]);
@@ -12,51 +12,21 @@ export function useRanking() {
             setLoading(true);
             setError(null);
 
-            // Fetch all users and transactions in parallel
-            const [users, transactions] = await Promise.all([
-                pb.collection('users').getFullList<User>(),
-                pb.collection('point_transactions').getFullList<PointTransaction>({
-                    expand: 'user',
-                }),
-            ]);
-
-            // Initialize map with all users starting at 0 points
-            const pointsMap = new Map<string, UserRanking>();
-
-            users.forEach((user) => {
-                pointsMap.set(user.id, {
-                    id: user.id,
-                    name: user.name || user.email.split('@')[0],
-                    avatar: user.avatar,
-                    totalPoints: 0,
-                    rank: 0,
-                });
+            // Fetch rankings directly from server-side aggregated view
+            const records = await pb.collection('rankings_view').getFullList<UserRanking>({
+                sort: '-totalPoints',
             });
 
-            // Add points from transactions
-            transactions.forEach((tx) => {
-                const userId = tx.user; // Use the direct user ID reference
-                // Or safely handle if we want to rely on expand, but tx.user is safer if the user might be deleted but tx exists? 
-                // Actually, if we are iterating all users from the users collection, we only care about transactions for those users.
-
-                const existing = pointsMap.get(userId);
-                if (existing) {
-                    existing.totalPoints += tx.amount || 0;
-                }
-                // If user doesn't exist in pointsMap (e.g. deleted user but transaction remains), we ignore or handle accordingly. 
-                // Current requirement implies showing all *active* users.
-            });
-
-            // Sort by points descending and assign ranks
-            const sorted = Array.from(pointsMap.values()).sort(
-                (a, b) => b.totalPoints - a.totalPoints
-            );
-
-            sorted.forEach((user, index) => {
+            // Assign ranks client-side based on sorted order
+            records.forEach((user, index) => {
                 user.rank = index + 1;
+                // Safe name fallback matching original client logic
+                if (!user.name && user.id) {
+                    user.name = 'Gebruiker ' + user.id.slice(0, 5);
+                }
             });
 
-            setRankings(sorted);
+            setRankings(records);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch rankings');
         } finally {
