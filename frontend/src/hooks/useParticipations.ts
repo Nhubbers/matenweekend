@@ -1,40 +1,24 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Participation } from '@/types';
 
 export function useParticipations(activityId?: string) {
     const { user } = useAuth();
-    const [participations, setParticipations] = useState<Participation[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
+    const queryKey = ['participations', activityId];
 
-    const fetchParticipations = useCallback(async () => {
-        if (!activityId) {
-            setLoading(false);
-            return;
-        }
-
-        try {
-            setLoading(true);
-            setError(null);
-
-            const result = await pb.collection('participations').getFullList<Participation>({
+    const { data: participations = [], isLoading: loading, error, refetch } = useQuery<Participation[]>({
+        queryKey,
+        queryFn: async () => {
+            if (!activityId) return [];
+            return await pb.collection('participations').getFullList<Participation>({
                 filter: `activity = "${activityId}"`,
                 expand: 'user',
             });
-
-            setParticipations(result);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch participations');
-        } finally {
-            setLoading(false);
-        }
-    }, [activityId]);
-
-    useEffect(() => {
-        fetchParticipations();
-    }, [fetchParticipations]);
+        },
+        enabled: !!activityId,
+    });
 
     const isJoined = participations.some((p) => p.user === user?.id);
     const myParticipation = participations.find((p) => p.user === user?.id);
@@ -46,8 +30,7 @@ export function useParticipations(activityId?: string) {
             activity: activityId,
         });
 
-        // Refetch to get the expanded user data
-        await fetchParticipations();
+        await queryClient.invalidateQueries({ queryKey });
         return participation;
     };
 
@@ -55,7 +38,7 @@ export function useParticipations(activityId?: string) {
         if (!myParticipation) return;
 
         await pb.collection('participations').delete(myParticipation.id);
-        setParticipations((prev) => prev.filter((p) => p.id !== myParticipation.id));
+        await queryClient.invalidateQueries({ queryKey });
     };
 
     const addParticipant = async (userId: string) => {
@@ -66,14 +49,13 @@ export function useParticipations(activityId?: string) {
             user: userId,
         });
 
-        // Refetch to get the expanded user data
-        await fetchParticipations();
+        await queryClient.invalidateQueries({ queryKey });
         return participation;
     };
 
     const removeParticipant = async (participationId: string) => {
         await pb.collection('participations').delete(participationId);
-        setParticipations((prev) => prev.filter((p) => p.id !== participationId));
+        await queryClient.invalidateQueries({ queryKey });
     };
 
     const markNoshows = async (noshows: Record<string, boolean>) => {
@@ -82,16 +64,16 @@ export function useParticipations(activityId?: string) {
             pb.collection('participations').update(participationId, { noshow: isNoshow })
         );
         await Promise.all(updates);
-        await fetchParticipations(); // Refresh data
+        await queryClient.invalidateQueries({ queryKey });
     };
 
     return {
         participations,
         loading,
-        error,
+        error: error ? error.message : null,
         isJoined,
         myParticipation,
-        refetch: fetchParticipations,
+        refetch,
         join,
         leave,
         addParticipant,
@@ -102,41 +84,23 @@ export function useParticipations(activityId?: string) {
 
 export function useMyParticipations() {
     const { user } = useAuth();
-    const [participations, setParticipations] = useState<Participation[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
-    const fetchMyParticipations = useCallback(async () => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
-
-        try {
-            setLoading(true);
-            setError(null);
-
-            const result = await pb.collection('participations').getFullList<Participation>({
+    const { data: participations = [], isLoading: loading, error, refetch } = useQuery<Participation[]>({
+        queryKey: ['my-participations', user?.id],
+        queryFn: async () => {
+            if (!user) return [];
+            return await pb.collection('participations').getFullList<Participation>({
                 filter: `user = "${user.id}"`,
                 expand: 'activity',
             });
-
-            setParticipations(result);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch participations');
-        } finally {
-            setLoading(false);
-        }
-    }, [user]);
-
-    useEffect(() => {
-        fetchMyParticipations();
-    }, [fetchMyParticipations]);
+        },
+        enabled: !!user,
+    });
 
     return {
         participations,
         loading,
-        error,
-        refetch: fetchMyParticipations,
+        error: error ? error.message : null,
+        refetch,
     };
 }

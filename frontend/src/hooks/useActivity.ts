@@ -1,37 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import type { Activity } from '@/types';
 
 export function useActivity(id: string | undefined) {
-    const [activity, setActivity] = useState<Activity | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
+    const queryKey = ['activity', id];
 
-    const fetchActivity = useCallback(async () => {
-        if (!id) return;
-        try {
-            setLoading(true);
-            setError(null);
-            const record = await pb.collection('activities').getOne<Activity>(id, {
+    const { data: activity = null, isLoading: loading, error, refetch } = useQuery<Activity | null>({
+        queryKey,
+        queryFn: async () => {
+            if (!id) return null;
+            return await pb.collection('activities').getOne<Activity>(id, {
                 expand: 'creator,co_organizers',
             });
-            setActivity(record);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch activity');
-        } finally {
-            setLoading(false);
-        }
-    }, [id]);
+        },
+        enabled: !!id,
+    });
 
-    useEffect(() => {
-        fetchActivity();
-    }, [fetchActivity]);
+    const setActivity = (newActivity: Activity | null | ((prev: Activity | null) => Activity | null)) => {
+        queryClient.setQueryData(queryKey, (prev: Activity | null) => {
+            if (typeof newActivity === 'function') {
+                return newActivity(prev);
+            }
+            return newActivity;
+        });
+    };
 
     return {
         activity,
         loading,
-        error,
-        refetch: fetchActivity,
+        error: error ? error.message : null,
+        refetch,
         setActivity,
     };
 }

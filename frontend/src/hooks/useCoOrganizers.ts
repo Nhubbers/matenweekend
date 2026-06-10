@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import type { User, Activity, Participation } from '@/types';
 
 export function useCoOrganizers(activityId?: string) {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +35,12 @@ export function useCoOrganizers(activityId?: string) {
 
             const updated = await pb.collection('activities').update<Activity>(activityId, {
                 co_organizers: updatedCoOrganizers,
+            }, {
+                expand: 'creator,co_organizers',
             });
+
+            await queryClient.invalidateQueries({ queryKey: ['activities'] });
+            await queryClient.invalidateQueries({ queryKey: ['activity', activityId] });
 
             return updated;
         } catch (err) {
@@ -43,7 +50,7 @@ export function useCoOrganizers(activityId?: string) {
         } finally {
             setLoading(false);
         }
-    }, [activityId]);
+    }, [activityId, queryClient]);
 
     // Remove a co-organizer from an activity
     const removeCoOrganizer = useCallback(async (userId: string, activity: Activity): Promise<Activity> => {
@@ -58,7 +65,12 @@ export function useCoOrganizers(activityId?: string) {
 
             const updated = await pb.collection('activities').update<Activity>(activityId, {
                 co_organizers: updatedCoOrganizers,
+            }, {
+                expand: 'creator,co_organizers',
             });
+
+            await queryClient.invalidateQueries({ queryKey: ['activities'] });
+            await queryClient.invalidateQueries({ queryKey: ['activity', activityId] });
 
             return updated;
         } catch (err) {
@@ -68,7 +80,7 @@ export function useCoOrganizers(activityId?: string) {
         } finally {
             setLoading(false);
         }
-    }, [activityId]);
+    }, [activityId, queryClient]);
 
     // Get available users (not already organizer or participant)
     const getAvailableUsers = useCallback(async (activity: Activity): Promise<User[]> => {

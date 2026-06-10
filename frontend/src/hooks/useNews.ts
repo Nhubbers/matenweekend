@@ -1,33 +1,19 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import type { News } from '@/types';
 
 export function useNews() {
-    const [news, setNews] = useState<News[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
-    const fetchNews = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const result = await pb.collection('news').getFullList<News>({
+    const { data: news = [], isLoading: loading, error, refetch } = useQuery<News[]>({
+        queryKey: ['news'],
+        queryFn: async () => {
+            return await pb.collection('news').getFullList<News>({
                 sort: '-created',
                 expand: 'author',
             });
-
-            setNews(result);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch news');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchNews();
-    }, [fetchNews]);
+        },
+    });
 
     const createNews = async (title: string, body: string) => {
         const newsItem = await pb.collection('news').create<News>({
@@ -35,26 +21,28 @@ export function useNews() {
             body,
             author: pb.authStore.record?.id,
         });
-        setNews((prev) => [newsItem, ...prev]);
+        await queryClient.invalidateQueries({ queryKey: ['news'] });
         return newsItem;
     };
 
     const updateNews = async (id: string, title: string, body: string) => {
         const updated = await pb.collection('news').update<News>(id, { title, body });
-        setNews((prev) => prev.map((n) => (n.id === id ? updated : n)));
+        await queryClient.invalidateQueries({ queryKey: ['news'] });
         return updated;
     };
 
     const deleteNews = async (id: string) => {
         await pb.collection('news').delete(id);
-        setNews((prev) => prev.filter((n) => n.id !== id));
+        await queryClient.invalidateQueries({ queryKey: ['news'] });
     };
 
     return {
         news,
         loading,
-        error,
-        refetch: fetchNews,
+        error: error ? error.message : null,
+        refetch: async () => {
+            await refetch();
+        },
         createNews,
         updateNews,
         deleteNews,

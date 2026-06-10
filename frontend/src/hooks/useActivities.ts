@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import type { Activity, ActivityFilter, CreateActivityData } from '@/types';
 
@@ -19,15 +19,11 @@ type UpdateActivityData = Partial<
 };
 
 export function useActivities(filter: ActivityFilter = 'all') {
-    const [activities, setActivities] = useState<Activity[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
-    const fetchActivities = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
-
+    const { data: activities = [], isLoading: loading, error, refetch } = useQuery<Activity[]>({
+        queryKey: ['activities', filter],
+        queryFn: async () => {
             let filterQuery = '';
             const now = new Date();
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -40,23 +36,13 @@ export function useActivities(filter: ActivityFilter = 'all') {
                 filterQuery = 'status = "completed" || status = "cancelled"';
             }
 
-            const result = await pb.collection('activities').getFullList<Activity>({
+            return await pb.collection('activities').getFullList<Activity>({
                 sort: 'start_time',
                 expand: 'creator,co_organizers',
                 filter: filterQuery || undefined,
             });
-
-            setActivities(result);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch activities');
-        } finally {
-            setLoading(false);
-        }
-    }, [filter]);
-
-    useEffect(() => {
-        fetchActivities();
-    }, [fetchActivities]);
+        },
+    });
 
     const createActivity = async (data: CreateActivityData) => {
         const formData = new FormData();
@@ -80,7 +66,8 @@ export function useActivities(filter: ActivityFilter = 'all') {
         const activity = await pb.collection('activities').create<Activity>(formData, {
             expand: 'creator,co_organizers',
         });
-        setActivities((prev) => [activity, ...prev]);
+        
+        await queryClient.invalidateQueries({ queryKey: ['activities'] });
         return activity;
     };
 
@@ -92,9 +79,8 @@ export function useActivities(filter: ActivityFilter = 'all') {
 
     const updateActivityStatus = async (id: string, status: Activity['status']) => {
         const updated = await pb.collection('activities').update<Activity>(id, { status });
-        setActivities((prev) =>
-            prev.map((a) => (a.id === id ? { ...a, status: updated.status } : a))
-        );
+        await queryClient.invalidateQueries({ queryKey: ['activities'] });
+        await queryClient.invalidateQueries({ queryKey: ['activity', id] });
         return updated;
     };
 
@@ -119,9 +105,9 @@ export function useActivities(filter: ActivityFilter = 'all') {
         const updated = await pb.collection('activities').update<Activity>(id, formData, {
             expand: 'creator,co_organizers',
         });
-        setActivities((prev) =>
-            prev.map((a) => (a.id === id ? updated : a))
-        );
+        
+        await queryClient.invalidateQueries({ queryKey: ['activities'] });
+        await queryClient.invalidateQueries({ queryKey: ['activity', id] });
         return updated;
     };
 
@@ -142,28 +128,33 @@ export function useActivities(filter: ActivityFilter = 'all') {
         }
 
         const updated = await pb.collection('activities').update<Activity>(activity.id, formData);
-        setActivities((prev) =>
-            prev.map((a) => (a.id === activity.id ? { ...a, ...updated, expand: a.expand } : a))
-        );
+        await queryClient.invalidateQueries({ queryKey: ['activities'] });
+        await queryClient.invalidateQueries({ queryKey: ['activity', activity.id] });
+        await queryClient.invalidateQueries({ queryKey: ['rankings'] });
         return updated;
     };
 
     const reopenActivity = async (activity: Activity) => {
         // Update status to open. 
         // Server-side hooks (main.pb.js) will handle the removal of point transactions.
-        return updateActivityStatus(activity.id, 'open');
+        const updated = await updateActivityStatus(activity.id, 'open');
+        await queryClient.invalidateQueries({ queryKey: ['rankings'] });
+        return updated;
     };
 
     const deleteActivity = async (id: string) => {
         await pb.collection('activities').delete(id);
-        setActivities((prev) => prev.filter((a) => a.id !== id));
+        await queryClient.invalidateQueries({ queryKey: ['activities'] });
+        await queryClient.invalidateQueries({ queryKey: ['activity', id] });
     };
 
     return {
         activities,
         loading,
-        error,
-        refetch: fetchActivities,
+        error: error ? error.message : null,
+        refetch: async () => {
+            await refetch();
+        },
         createActivity,
         getActivity,
         updateActivityStatus,
