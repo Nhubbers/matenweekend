@@ -390,6 +390,68 @@ onRecordAfterCreateSuccess((e) => {
 }, 'activities');
 
 // ============================================
+// HOOK 8b: Send email notification on news creation
+// ============================================
+// Fires after a news item is created and emails all participants who opted IN
+// for email notifications (profile toggle). Runs after the save, so it never
+// blocks creating the news item.
+onRecordAfterCreateSuccess((e) => {
+    const news = e.record;
+
+    try {
+        // Everyone who opted IN for email notifications and has an email address.
+        const recipients = $app.findRecordsByFilter('users', "email != '' && email_notifications = true");
+
+        if (recipients.length === 0) {
+            console.log('[News] No users opted in for email notifications. Skipping email.');
+            return;
+        }
+
+        const appName = $app.settings().meta.appName || 'Matenweekend';
+        const senderAddress = $app.settings().meta.senderAddress;
+        const senderName = $app.settings().meta.senderName || appName;
+        const newsTitle = news.get('title');
+
+        let appUrl = $app.settings().meta.appUrl;
+        if (!appUrl) {
+            appUrl = 'https://matenweekend.nl';
+        }
+
+        recipients.forEach((user) => {
+            try {
+                const email = new MailerMessage({
+                    from: {
+                        address: senderAddress,
+                        name: senderName,
+                    },
+                    to: [{ address: user.get('email') }],
+                    subject: `Nieuw bericht: ${newsTitle}`,
+                    html: `
+                        <h2>📰 ${newsTitle}</h2>
+                        <p>Er is een nieuw bericht geplaatst op ${appName}:</p>
+                        <div style="padding:12px;border-left:3px solid #007bff;background:#f6f8fa;">${news.get('body')}</div>
+                        <p>
+                            <a href="${appUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                Open ${appName}
+                            </a>
+                        </p>
+                        <p><small>Je ontvangt deze email omdat je meldingen hebt ingeschakeld in je profiel.</small></p>
+                    `,
+                });
+
+                $app.newMailClient().send(email);
+            } catch (err) {
+                console.log('[News] Error sending email to user ' + user.id + ': ' + err);
+            }
+        });
+
+        console.log(`[News] Sent news email to ${recipients.length} users.`);
+    } catch (err) {
+        console.log('[News] Error sending news emails: ' + err);
+    }
+}, 'news');
+
+// ============================================
 // HOOK 9: Scheduled task to send completion reminders
 // ============================================
 // Runs every hour at the top of the hour
