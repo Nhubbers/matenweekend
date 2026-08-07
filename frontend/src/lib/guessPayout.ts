@@ -21,13 +21,12 @@ export function isGuessCorrect(locationCorrect: boolean, guestCorrect: boolean):
 /**
  * Calculates the final payout for a submitted guess.
  *
- * The base points are earned when at least one answer is correct (the FULL base,
- * whether one or both answers are correct). The x1.5 / x3 multiplier applies ONLY
- * to the WAGERED points (the amount taken from the participant's point balance),
- * never to the base.
+ * The base points are ONLY earned when BOTH answers are correct. The x1.5 / x3
+ * multiplier applies ONLY to the WAGERED points (the amount taken from the
+ * participant's point balance), never to the base.
  *
  * - Both correct:  Base + Wager * 3 (plus the 50pt Combo Bonus on the final round)
- * - One correct:   Base + Wager * 1.5
+ * - One correct:   Wager * 1.5 (NO base points)
  * - Both wrong:    -Wager (the participant loses all of their wagered points)
  */
 export function calculatePayout(
@@ -43,7 +42,7 @@ export function calculatePayout(
         return basePoints + wagerPoints * MULTIPLIER_BOTH_CORRECT + (isFinalRound ? COMBO_BONUS : 0);
     }
     if (correct === 1) {
-        return basePoints + wagerPoints * MULTIPLIER_ONE_CORRECT;
+        return wagerPoints * MULTIPLIER_ONE_CORRECT;
     }
     return -wagerPoints;
 }

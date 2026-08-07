@@ -188,7 +188,7 @@ export function GuessFormModal({
                             {showInfo && (
                                 <p className="text-[11px] text-base-content/60 leading-relaxed p-2 rounded-lg border border-base-300 bg-base-100">
                                     Je zet punten in vanuit je saldo. De vermenigvuldiger geldt alleen op je ingezette
-                                    punten en nooit op de base punten. Bij ten minste één goed antwoord krijg je de
+                                    punten en nooit op de base punten. Alleen bij 2 goede antwoorden krijg je de
                                     volledige base punten ({basePoints} pts) erbovenop. ❌ 0 goed: je verliest je inzet
                                     ({effectiveWager} pts).
                                     {isFinalRound ? ' 🏆 +50 Combo bonus bij 2 goed (finale ronde)!' : ''}

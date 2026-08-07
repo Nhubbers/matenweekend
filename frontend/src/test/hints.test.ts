@@ -40,9 +40,9 @@ describe('Guess Payout Calculation', () => {
         expect(calculatePayout(75, 20, true, true, true)).toBe(75 + 20 * 3 + COMBO_BONUS);
     });
 
-    it('awards the full Base + (Wager * 1.5) when exactly one answer is correct', () => {
-        expect(calculatePayout(75, 20, true, false, false)).toBe(75 + 20 * 1.5);
-        expect(calculatePayout(75, 20, false, true, false)).toBe(75 + 20 * 1.5);
+    it('awards only (Wager * 1.5) and NO base when exactly one answer is correct', () => {
+        expect(calculatePayout(75, 20, true, false, false)).toBe(20 * 1.5);
+        expect(calculatePayout(75, 20, false, true, false)).toBe(20 * 1.5);
     });
 
     it('makes the participant lose all wagered points (and no base) when both answers are wrong', () => {
@@ -58,6 +58,7 @@ describe('Guess Payout Calculation', () => {
         // base stays flat (10) regardless of the wager multiplier
         expect(calculatePayout(10, 10, true, true, false)).toBe(10 + 10 * 3);
         expect(calculatePayout(10, 20, true, true, false)).toBe(10 + 20 * 3);
-        expect(calculatePayout(10, 10, true, false, false)).toBe(10 + 10 * 1.5);
+        // one correct -> no base, only the wagered points scaled
+        expect(calculatePayout(10, 10, true, false, false)).toBe(10 * 1.5);
     });
 });
