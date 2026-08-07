@@ -11,7 +11,13 @@ migrate(
             fields: [
                 { name: 'round_number', type: 'number', required: true, min: 1, onlyInt: true },
                 { name: 'title', type: 'text', required: true },
-                { name: 'type', type: 'select', required: true, values: ['image', 'audio', 'text', 'combined'] },
+                {
+                    name: 'type',
+                    type: 'select',
+                    required: true,
+                    maxSelect: 1,
+                    values: ['image', 'audio', 'text', 'combined'],
+                },
                 { name: 'media_url', type: 'url' },
                 { name: 'content_location', type: 'text' },
                 { name: 'content_mystery_guest', type: 'text' },
@@ -35,8 +41,10 @@ migrate(
                 {
                     name: 'user',
                     type: 'relation',
-                    relationCollectionName: 'users',
-                    relationMaxSelect: 1,
+                    collectionId: '_pb_users_auth_',
+                    maxSelect: 1,
+                    minSelect: 0,
+                    cascadeDelete: false,
                     required: true,
                 },
                 { name: 'round_number', type: 'number', required: true, min: 1, onlyInt: true },
@@ -58,7 +66,14 @@ migrate(
             viewRule: "@request.auth.id != ''",
             fields: [
                 { name: 'round', type: 'number', required: true, min: 1, onlyInt: true },
-                { name: 'hint', type: 'relation', relationCollectionName: 'hints', relationMaxSelect: 1 },
+                {
+                    name: 'hint',
+                    type: 'relation',
+                    collectionId: 'pbc_hints',
+                    maxSelect: 1,
+                    minSelect: 0,
+                    cascadeDelete: false,
+                },
                 { name: 'release_at', type: 'date', required: true },
                 { name: 'window_end_at', type: 'date', required: true },
             ],

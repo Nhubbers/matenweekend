@@ -529,8 +529,20 @@ onRecordCreate((e) => {
     e.next();
 }, 'guesses');
 
-// Validate before an existing guess is updated (exclude its own previous wager).
+// On update, only guard against INCREASING the wager (predictions are one-time).
+// The admin resolving a guess (unchanged wager) must always pass, otherwise the
+// payout of a lost guess would be rejected once its deduction is applied.
 onRecordUpdate((e) => {
-    assertGuessWagerWithinBalance(e.record, e.record.id);
+    const newWager = e.record.getFloat('wager_points') || 0;
+    let originalWager = 0;
+    try {
+        const original = $app.findRecordById('guesses', e.record.id);
+        originalWager = original ? original.getFloat('wager_points') || 0 : 0;
+    } catch (err) {
+        originalWager = 0;
+    }
+    if (newWager > originalWager) {
+        assertGuessWagerWithinBalance(e.record, e.record.id);
+    }
     e.next();
 }, 'guesses');
