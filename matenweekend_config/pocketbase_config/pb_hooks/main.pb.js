@@ -392,18 +392,18 @@ onRecordAfterCreateSuccess((e) => {
 // ============================================
 // HOOK 8b: Send email notification on news creation
 // ============================================
-// Fires after a news item is created and emails all participants who opted IN
-// for email notifications (profile toggle). Runs after the save, so it never
-// blocks creating the news item.
+// Fires after a news item is created and emails ALL participants (these are
+// important announcements, so everyone gets it regardless of the notification
+// opt-in toggle). Runs after the save, so it never blocks creating the news item.
 onRecordAfterCreateSuccess((e) => {
     const news = e.record;
 
     try {
-        // Everyone who opted IN for email notifications and has an email address.
-        const recipients = $app.findRecordsByFilter('users', "email != '' && email_notifications = true");
+        // All users with an email address.
+        const recipients = $app.findRecordsByFilter('users', "email != ''");
 
         if (recipients.length === 0) {
-            console.log('[News] No users opted in for email notifications. Skipping email.');
+            console.log('[News] No users with an email address found. Skipping email.');
             return;
         }
 
@@ -435,7 +435,7 @@ onRecordAfterCreateSuccess((e) => {
                                 Open ${appName}
                             </a>
                         </p>
-                        <p><small>Je ontvangt deze email omdat je meldingen hebt ingeschakeld in je profiel.</small></p>
+                        <p><small>Je ontvangt deze email omdat je deel uitmaakt van ${appName}.</small></p>
                     `,
                 });
 
