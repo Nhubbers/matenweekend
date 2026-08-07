@@ -8,7 +8,7 @@ import { useUserTransactions } from '@/hooks/useRanking';
 import { nl } from '@/lib/translations';
 
 export function HintsPage() {
-    const { hints, userGuess, saveGuess, nextLockedHint, pendingWagerPoints } = useHints();
+    const { hints, userGuess, saveGuess, nextLockedHint, pendingWagerPoints, myPredictions } = useHints();
     const { user } = useAuth();
     const { totalPoints: userPointsBalance } = useUserTransactions(user?.id);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,6 +23,13 @@ export function HintsPage() {
     // in unresolved wagers. This prevents wagering the same points twice (double spending).
     const availablePoints = Math.max(0, userPointsBalance - pendingWagerPoints);
 
+    // Map each round number to the user's prediction for that round.
+    const guessByRound: Record<number, (typeof myPredictions)[number]> = {};
+    myPredictions.forEach((g) => {
+        guessByRound[g.roundNumber] = g;
+    });
+    const sortedPredictions = [...myPredictions].sort((a, b) => a.roundNumber - b.roundNumber);
+
     return (
         <PageContainer>
             <div className="space-y-5 pb-6">
@@ -34,43 +41,42 @@ export function HintsPage() {
                     <p className="text-xs text-base-content/70 mt-0.5">Ontrafel het mysterie vóór 1 oktober 2026!</p>
                 </div>
 
-                {/* Current Guess Status Banner */}
+                {/* My Predictions Banner */}
                 <div className="bg-gradient-to-br from-base-200 to-base-100 border border-primary/20 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-3 border-b border-base-300 pb-2">
                         <span className="font-bold text-sm flex items-center gap-1.5 text-primary">
-                            🎯 {nl.currentGuess}
+                            🎯 {nl.myGuesses}
                         </span>
-                        {userGuess && (
+                        {myPredictions.length > 0 && (
                             <span className="badge badge-sm badge-success font-semibold gap-1 text-white">
-                                ✓ Ronde #{userGuess.roundNumber} Opslagen
+                                ✓ {myPredictions.length} ingediend
                             </span>
                         )}
                     </div>
 
-                    {userGuess ? (
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="bg-base-100 p-2.5 rounded-xl border border-base-200">
-                                <span className="text-[10px] text-base-content/60 uppercase block font-semibold">
-                                    📍 Land
-                                </span>
-                                <span className="font-bold text-sm truncate block text-primary">
-                                    {userGuess.locationCountry}
-                                </span>
-                            </div>
-                            <div className="bg-base-100 p-2.5 rounded-xl border border-base-200">
-                                <span className="text-[10px] text-base-content/60 uppercase block font-semibold">
-                                    🎭 Guest
-                                </span>
-                                <span className="font-bold text-sm truncate block text-secondary">
-                                    {userGuess.mysteryGuestName}
-                                </span>
-                            </div>
-                            <div className="bg-base-100 p-2.5 rounded-xl border border-base-200">
-                                <span className="text-[10px] text-base-content/60 uppercase block font-semibold">
-                                    🎲 Inzet
-                                </span>
-                                <span className="font-bold text-sm block text-accent">{userGuess.wagerPoints} pts</span>
-                            </div>
+                    {sortedPredictions.length > 0 ? (
+                        <div className="space-y-2">
+                            {sortedPredictions.map((g) => (
+                                <div
+                                    key={g.roundNumber}
+                                    className="bg-base-100 rounded-xl border border-base-200 p-2.5 flex items-center gap-2"
+                                >
+                                    <span className="badge badge-primary badge-sm font-bold shrink-0">
+                                        #{g.roundNumber}
+                                    </span>
+                                    <div className="flex-1 min-w-0 text-xs">
+                                        <span className="font-bold text-primary block truncate">
+                                            📍 {g.locationCountry}
+                                        </span>
+                                        <span className="font-bold text-secondary block truncate">
+                                            🎭 {g.mysteryGuestName}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs font-bold text-accent shrink-0">
+                                        🎲 {g.wagerPoints} pts
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <div className="text-center py-2">
@@ -93,7 +99,7 @@ export function HintsPage() {
                             hint={hint}
                             isNextToUnlock={hint.id === nextLockedHint?.id}
                             onOpenGuessModal={() => setIsModalOpen(true)}
-                            userGuess={userGuess}
+                            userGuess={guessByRound[hint.roundNumber] ?? null}
                         />
                     ))}
                 </div>

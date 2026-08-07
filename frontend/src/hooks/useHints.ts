@@ -152,6 +152,9 @@ export function useHints() {
     // totalPoints - pendingWagerPoints, so already-wagered points cannot be wagered twice.
     const pendingWagerPoints = myGuesses.filter((g) => !g.resolved).reduce((sum, g) => sum + (g.wager_points ?? 0), 0);
 
+    // The user's submitted predictions across all rounds (mapped to domain objects).
+    const myPredictions: UserGuess[] = myGuesses.map(toGuess);
+
     /**
      * Saves (upserts) the active round guess for the logged-in user in PocketBase.
      * Predictions are NEVER stored locally - if the server write fails, this throws
@@ -238,6 +241,7 @@ export function useHints() {
         activeRoundNumber,
         activeHint,
         pendingWagerPoints,
+        myPredictions,
     };
 }
 

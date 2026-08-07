@@ -131,8 +131,8 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
                     )}
                 </div>
 
-                {/* Submission Window Timer */}
-                <SubmissionWindowTimer windowEndDate={hint.windowEndDate} />
+                {/* Submission Window Timer (hidden once this round's prediction is submitted) */}
+                {!userGuess && <SubmissionWindowTimer windowEndDate={hint.windowEndDate} />}
 
                 {/* Prediction Action Section inside Card */}
                 {onOpenGuessModal && (

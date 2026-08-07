@@ -151,6 +151,7 @@ export const nl = {
     comboBonusNotice: '🏆 Alleen in de finale ronde: +50 Bonus Punten als je beide goed hebt!',
     guessWindowClosed: 'Inzendtermijn voor deze ronde is gesloten',
     currentGuess: 'Huidige Voorspelling',
+    myGuesses: 'Mijn Voorspellingen',
     selectCountry: 'Selecteer een land...',
     enterFullName: 'Voer volledige naam in...',
     lockedHint: 'Ontgrendelt op',
