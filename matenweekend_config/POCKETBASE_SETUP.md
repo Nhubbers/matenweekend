@@ -27,14 +27,15 @@ Then update your `docker-compose.yml` to mount migrations:
 
 ```yaml
 pocketbase:
-  image: ghcr.io/muchobien/pocketbase:latest
-  volumes:
-    - ./pb_data:/pb_data
-    - ./pb_hooks:/pb_hooks
-    - ./pb_migrations:/pb_migrations  # Add this line
+    image: ghcr.io/muchobien/pocketbase:latest
+    volumes:
+        - ./pb_data:/pb_data
+        - ./pb_hooks:/pb_hooks
+        - ./pb_migrations:/pb_migrations # Add this line
 ```
 
 Restart PocketBase:
+
 ```bash
 cd /opt/matenweekend
 docker compose down
@@ -48,6 +49,7 @@ docker compose up -d
 ### Why did you lose data?
 
 The `pb_data` folder contains EVERYTHING:
+
 - Database (SQLite)
 - Uploaded files
 - Settings
@@ -101,6 +103,7 @@ chmod +x /opt/matenweekend/backup.sh
 ```
 
 Run daily via cron:
+
 ```bash
 crontab -e
 # Add this line:
@@ -172,3 +175,99 @@ If you need to set up from scratch again:
 8. [ ] Set up backup script
 
 All these files should be kept in your GitHub repo or backed up somewhere safe!
+
+---
+
+## Hints & Mysteries Collections (v2)
+
+The `Hints & Mysteries` feature uses three new collections added to
+`pb_schema.json` (import via the Admin UI as described in Option 1) and
+provided as an auto-applied migration
+(`pb_migrations/1720000000_create_hints_guesses_schedules.js`).
+
+### `hints`
+
+The 5 scheduled clues. Readable by any authenticated user; managed by admins
+(via the Admin UI / admin API).
+
+| Field                   | Type   | Notes                                   |
+| ----------------------- | ------ | --------------------------------------- |
+| `round_number`          | number | 1..5                                    |
+| `title`                 | text   | required                                |
+| `type`                  | select | `image` / `audio` / `text` / `combined` |
+| `media_url`             | url    | image/audio location                    |
+| `content_location`      | text   | location clue text                      |
+| `content_mystery_guest` | text   | mystery-guest clue text                 |
+| `release_date`          | date   | required - when the hint unlocks        |
+| `window_end_date`       | date   | required - 7-day guess deadline         |
+| `potential_points`      | number | base payout                             |
+
+Access rules: `listRule`/`viewRule` = any authenticated user; write = admin only.
+
+### `guesses`
+
+One record per participant per round, including the wagered amount, tied to
+the logged-in user.
+
+| Field                | Type             | Notes                                                           |
+| -------------------- | ---------------- | --------------------------------------------------------------- |
+| `user`               | relation → users | required, ties the guess to the account                         |
+| `round_number`       | number           | required                                                        |
+| `location_country`   | text             | required                                                        |
+| `mystery_guest_name` | text             | required                                                        |
+| `wager_points`       | number           | required, capped at the user's balance by the UI                |
+| `submitted_at`       | date             |                                                                 |
+| `resolved`           | bool             | set to true by the admin payout flow to prevent double-awarding |
+| `awarded_points`     | number           | final payout recorded on resolution                             |
+
+Access rules:
+
+- `createRule`: `@request.auth.id = user` (users can only create their own)
+- `listRule`/`viewRule`: `user = @request.auth.id || @request.auth.isAdmin = true`
+- `updateRule`: users may edit only before resolution; admins always
+- `deleteRule`: admin only
+
+### `hint_schedules`
+
+Explicit scheduling of the 7-day release/guess windows (the `hints` collection
+already embeds these dates; this collection makes the schedule explicit and
+admin-editable).
+
+| Field           | Type             | Notes    |
+| --------------- | ---------------- | -------- |
+| `round`         | number           | required |
+| `hint`          | relation → hints | optional |
+| `release_at`    | date             | required |
+| `window_end_at` | date             | required |
+
+### Applying the schema
+
+- **Import:** Admin UI → Settings → Import collections → upload `pb_schema.json`.
+- **Auto-setup:** mount `pb_migrations/` in the PocketBase container and restart;
+  the migration creates all three collections additively without touching
+  existing data.
+
+### `round_answers`
+
+Admin-managed **correct answers per round** (added by migration
+`1720000001_create_round_answers.js`). All access rules are admin-only
+(`@request.auth.isAdmin = true`) so participants can never read the answers
+through the API.
+
+| Field             | Type   | Notes                                             |
+| ----------------- | ------ | ------------------------------------------------- |
+| `round`           | number | required - the hint round this answer belongs to  |
+| `correct_country` | text   | required - the official Location (Country)        |
+| `correct_guest`   | text   | required - the official Mystery Guest (full name) |
+
+The admin panel exposes a per-round editor for these answers, and the payout
+calculation compares each submission against the answer of its own round.
+
+### Server-side wager validation (double-spend guard)
+
+`pb_hooks/main.pb.js` registers `onRecordCreate` / `onRecordUpdate` hooks on the
+`guesses` collection that reject any guess whose `wager_points` exceeds the
+participant's **available balance** (settled `point_transactions` total minus
+already-pending unresolved wagers). This enforces at the database level what the
+UI caps on the wager slider, so a participant cannot wager the same points twice
+by calling the API directly.

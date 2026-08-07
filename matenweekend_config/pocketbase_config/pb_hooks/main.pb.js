@@ -12,10 +12,7 @@ onRecordAfterUpdateSuccess((e) => {
     if (record.get('status') === 'open') {
         try {
             // Find all transactions related to this activity
-            const transactions = $app.findRecordsByFilter(
-                'point_transactions',
-                "activity = '" + record.id + "'"
-            );
+            const transactions = $app.findRecordsByFilter('point_transactions', "activity = '" + record.id + "'");
 
             // Delete them to reset the state
             transactions.forEach((tx) => {
@@ -23,7 +20,9 @@ onRecordAfterUpdateSuccess((e) => {
             });
 
             if (transactions.length > 0) {
-                console.log('Activity reopened: Removed ' + transactions.length + ' transactions for ' + record.get('title'));
+                console.log(
+                    'Activity reopened: Removed ' + transactions.length + ' transactions for ' + record.get('title')
+                );
             }
         } catch (err) {
             console.log('Error removing transactions on reopen: ' + err);
@@ -42,7 +41,9 @@ onRecordAfterUpdateSuccess((e) => {
             "activity = '" + record.id + "' && type = 'creation'"
         );
         if (existingTx) return; // Already processed
-    } catch (err) { /* Not found, proceed */ }
+    } catch (err) {
+        /* Not found, proceed */
+    }
 
     console.log('Activity completed: ' + record.get('title'));
 
@@ -55,10 +56,7 @@ onRecordAfterUpdateSuccess((e) => {
 
     // Fetch participants first to calculate bonus
     // FIXED: Removed complex params object, used simple string filter
-    const participations = $app.findRecordsByFilter(
-        'participations',
-        "activity = '" + activityId + "'"
-    );
+    const participations = $app.findRecordsByFilter('participations', "activity = '" + activityId + "'");
 
     // Count participants who actually attended (not no-shows)
     const attendedParticipations = participations.filter(function (p) {
@@ -106,7 +104,15 @@ onRecordAfterUpdateSuccess((e) => {
             orgTx.set('type', 'creation');
 
             $app.save(orgTx);
-            console.log('Awarded ' + totalPerOrganizer + ' points to organizer ' + organizerId + ' (1 of ' + organizerCount + ')');
+            console.log(
+                'Awarded ' +
+                    totalPerOrganizer +
+                    ' points to organizer ' +
+                    organizerId +
+                    ' (1 of ' +
+                    organizerCount +
+                    ')'
+            );
         });
     }
 
@@ -139,9 +145,7 @@ onRecordAfterUpdateSuccess((e) => {
             $app.save(tx);
         });
     }
-
 }, 'activities');
-
 
 // ============================================
 // HOOK 2: Validate participation limits
@@ -163,10 +167,7 @@ onRecordCreateRequest((e) => {
 
     if (maxParticipants > 0) {
         // FIXED: Used simple string filter
-        const currentParticipants = $app.findRecordsByFilter(
-            'participations',
-            "activity = '" + activityId + "'"
-        );
+        const currentParticipants = $app.findRecordsByFilter('participations', "activity = '" + activityId + "'");
 
         if (currentParticipants.length >= maxParticipants) {
             throw new BadRequestError('Cannot join: Activity is full');
@@ -174,10 +175,10 @@ onRecordCreateRequest((e) => {
     }
 
     // Check if user is the creator (Organizer cannot participate)
-    // We need to check who is trying to join. 
-    // If e.auth is present, that's the user. 
-    // If the record has 'user' set explicitly, we should check that too, 
-    // but usually 'user' is set from auth in HOOK 5 (which runs on Create too, but might run after or before? 
+    // We need to check who is trying to join.
+    // If e.auth is present, that's the user.
+    // If the record has 'user' set explicitly, we should check that too,
+    // but usually 'user' is set from auth in HOOK 5 (which runs on Create too, but might run after or before?
     // Actually, hooks order matters. HOOK 5 is also onRecordCreateRequest.
     // If we rely on e.auth, it's safer.
     const currentUser = e.auth;
@@ -193,7 +194,6 @@ onRecordCreateRequest((e) => {
 
     e.next();
 }, 'participations');
-
 
 // ============================================
 // HOOK 3: Prevent leaving completed activities
@@ -211,7 +211,6 @@ onRecordDeleteRequest((e) => {
 
     e.next();
 }, 'participations');
-
 
 // ============================================
 // HOOK 4: Set creator automatically
@@ -231,7 +230,6 @@ onRecordCreateRequest((e) => {
     e.next();
 }, 'activities');
 
-
 // ============================================
 // HOOK 5: Set user automatically
 // ============================================
@@ -250,9 +248,7 @@ onRecordCreateRequest((e) => {
     e.next();
 }, 'participations');
 
-
 console.log('[Matenweekend] Hooks loaded successfully!');
-
 
 // ============================================
 // HOOK 6: Award first login bonus
@@ -261,17 +257,14 @@ onRecordAuthWithPasswordRequest((e) => {
     e.next(); // Proceed with default auth behavior first
 
     const userId = e.record.id;
-    // Only check for points if auth was successful (which is implied if we reach here and e.next() doesn't throw, 
-    // but e.next() handles the response. Actually, e.next() executes the next handler. 
+    // Only check for points if auth was successful (which is implied if we reach here and e.next() doesn't throw,
+    // but e.next() handles the response. Actually, e.next() executes the next handler.
     // To run logic AFTER, we should place it after e.next().
     // However, if e.next() returns a response, we good.
 
     try {
         // Check if first login bonus already awarded
-        const existing = $app.findRecordsByFilter(
-            'point_transactions',
-            `user = '${userId}' && reason = 'First Login'`
-        );
+        const existing = $app.findRecordsByFilter('point_transactions', `user = '${userId}' && reason = 'First Login'`);
 
         if (existing.length === 0) {
             const pointTransactions = $app.findCollectionByNameOrId('point_transactions');
@@ -288,7 +281,6 @@ onRecordAuthWithPasswordRequest((e) => {
         console.log('Error checking first login bonus: ' + err);
     }
 }, 'users');
-
 
 // ============================================
 // HOOK 7: Validate activity start date (must be tomorrow or later)
@@ -309,14 +301,13 @@ onRecordCreateRequest((e) => {
         throw new BadRequestError('Activiteit moet minimaal morgen plaatsvinden');
     }
 
-    // No need to call e.next() for Before hooks in some versions, but standard is usually no return or next() depending on specific hook version. 
-    // In PB hooks (Goja), return checks or throwing error stops execution. 
-    // 'onRecordBeforeCreateRequest' doesn't strictly need e.next() in JS hooks usually if it's just validation, 
+    // No need to call e.next() for Before hooks in some versions, but standard is usually no return or next() depending on specific hook version.
+    // In PB hooks (Goja), return checks or throwing error stops execution.
+    // 'onRecordBeforeCreateRequest' doesn't strictly need e.next() in JS hooks usually if it's just validation,
     // but looking at other hooks, e.next() isn't always used in before hooks in examples unless it's a specific middleware chain.
     // However, looking at HOOK 2 above, it ends with e.next();. So let's follow that pattern.
     e.next();
 }, 'activities');
-
 
 // ============================================
 // HOOK 8: Send email notification on activity creation
@@ -324,19 +315,15 @@ onRecordCreateRequest((e) => {
 onRecordAfterCreateSuccess((e) => {
     const activity = e.record;
 
-
     // Safety: only send if we have a title and it's open
     if (activity.get('status') !== 'open') return;
 
     try {
         // Find all users who have opted IN for email notifications
-        // The field 'email_notifications' is a boolean. 
+        // The field 'email_notifications' is a boolean.
         // We only want users where this is TRUE.
         // Also ensure they have an email address.
-        const recipients = $app.findRecordsByFilter(
-            'users',
-            "email != '' && email_notifications = true"
-        );
+        const recipients = $app.findRecordsByFilter('users', "email != '' && email_notifications = true");
 
         if (recipients.length === 0) {
             console.log('No users opted in for email notifications. Skipping email.');
@@ -360,7 +347,7 @@ onRecordAfterCreateSuccess((e) => {
             console.log('Error fetching creator name for email: ' + err);
         }
 
-        // Construct a simple link. 
+        // Construct a simple link.
         // Note: pb_hooks context might not know the frontend URL unless hardcoded or inferred.
         // Assuming standard production URL or configured app URL.
         let appUrl = $app.settings().meta.appUrl;
@@ -397,21 +384,19 @@ onRecordAfterCreateSuccess((e) => {
         });
 
         console.log(`Sent new activity email to ${recipients.length} users.`);
-
-        } catch (err) {
+    } catch (err) {
         console.log('Error sending new activity emails: ' + err);
-        }
-        }, 'activities');
+    }
+}, 'activities');
 
+// ============================================
+// HOOK 9: Scheduled task to send completion reminders
+// ============================================
+// Runs every hour at the top of the hour
+cronAdd('activityCompletionReminder', '0 * * * *', () => {
+    console.log('[Cron] Checking for activities that need a completion reminder...');
 
-        // ============================================
-        // HOOK 9: Scheduled task to send completion reminders
-        // ============================================
-        // Runs every hour at the top of the hour
-        cronAdd('activityCompletionReminder', '0 * * * *', () => {
-        console.log('[Cron] Checking for activities that need a completion reminder...');
-
-        try {
+    try {
         const now = new Date();
         const nowIso = now.toISOString();
 
@@ -419,7 +404,11 @@ onRecordAfterCreateSuccess((e) => {
         // Note: start_time < now is the fallback if end_time is null
         const overdueActivities = $app.findRecordsByFilter(
             'activities',
-            "status = 'open' && reminder_sent != true && (end_time < '" + nowIso + "' || (end_time = '' && start_time < '" + nowIso + "'))"
+            "status = 'open' && reminder_sent != true && (end_time < '" +
+                nowIso +
+                "' || (end_time = '' && start_time < '" +
+                nowIso +
+                "'))"
         );
 
         if (overdueActivities.length === 0) {
@@ -439,7 +428,7 @@ onRecordAfterCreateSuccess((e) => {
 
             const recipientsIds = [creatorId];
             if (Array.isArray(coOrganizers)) {
-                coOrganizers.forEach(id => {
+                coOrganizers.forEach((id) => {
                     if (id && recipientsIds.indexOf(id) === -1) recipientsIds.push(id);
                 });
             }
@@ -485,8 +474,63 @@ onRecordAfterCreateSuccess((e) => {
             $app.save(activity);
             console.log(`[Cron] Sent completion reminder for activity: ${activityTitle}`);
         });
-
-        } catch (err) {
+    } catch (err) {
         console.log('[Cron] Error in activityCompletionReminder: ' + err);
+    }
+});
+
+// ============================================
+// HOOK: Prevent double-spending on hint guesses
+// ============================================
+// A prediction wager may never exceed the participant's AVAILABLE balance:
+//   available = settled totalPoints - sum(pending/unresolved wagers)
+// This enforces at the database level what the UI already caps on the slider.
+
+function assertGuessWagerWithinBalance(record, excludeId) {
+    const userId = record.get('user');
+    const wager = record.getFloat('wager_points') || 0;
+
+    if (!userId) {
+        throw new BadRequestError('Ongeldige voorspelling: gebruiker ontbreekt.');
+    }
+    if (wager < 0) {
+        throw new BadRequestError('Inzet mag niet negatief zijn.');
+    }
+
+    // Sum the user's settled point transactions (the ranking balance).
+    const transactions = $app.findRecordsByFilter('point_transactions', "user = '" + userId + "'");
+    let totalPoints = 0;
+    transactions.forEach((tx) => {
+        totalPoints += tx.getFloat('amount') || 0;
+    });
+
+    // Sum the user's already-pending (unresolved) wagered points.
+    const pendingGuesses = $app.findRecordsByFilter('guesses', "user = '" + userId + "' && resolved != true");
+    let pendingWagers = 0;
+    pendingGuesses.forEach((g) => {
+        // On update, exclude the record currently being modified from its own pending total.
+        if (!excludeId || g.id !== excludeId) {
+            pendingWagers += g.getFloat('wager_points') || 0;
         }
-        });
+    });
+
+    const available = totalPoints - pendingWagers;
+
+    if (wager > available) {
+        throw new BadRequestError(
+            'Inzet (' + wager + ' pts) is hoger dan je beschikbare saldo (' + available + ' pts).'
+        );
+    }
+}
+
+// Validate before a new guess is created.
+onRecordCreate((e) => {
+    assertGuessWagerWithinBalance(e.record, null);
+    e.next();
+}, 'guesses');
+
+// Validate before an existing guess is updated (exclude its own previous wager).
+onRecordUpdate((e) => {
+    assertGuessWagerWithinBalance(e.record, e.record.id);
+    e.next();
+}, 'guesses');
