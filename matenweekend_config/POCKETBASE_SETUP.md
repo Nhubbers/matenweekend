@@ -196,6 +196,7 @@ The 5 scheduled clues. Readable by any authenticated user; managed by admins
 | `title`                 | text   | required                                |
 | `type`                  | select | `image` / `audio` / `text` / `combined` |
 | `media_url`             | url    | image/audio location                    |
+| `media_file`            | file   | uploaded image/audio file (admin panel) |
 | `content_location`      | text   | location clue text                      |
 | `content_mystery_guest` | text   | mystery-guest clue text                 |
 | `release_date`          | date   | required - when the hint unlocks        |

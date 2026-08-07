@@ -4,14 +4,14 @@ import { pb } from '@/lib/pocketbase';
 import { INITIAL_HINTS } from '@/data/mockHints';
 import type { Hint, RoundAnswer, Submission, User, UserGuess } from '@/types';
 
-const STORAGE_KEY_HINTS_CONFIG = 'matenweekend_hints_config';
-
 /* -------------------------------------------------------------------------- */
 /*  PocketBase record <-> domain mapping helpers                              */
 /* -------------------------------------------------------------------------- */
 
 interface HintRecord {
     id: string;
+    collectionId: string;
+    collectionName: string;
     round_number?: number;
     title?: string;
     release_date?: string;
@@ -20,11 +20,14 @@ interface HintRecord {
     content_location?: string;
     content_mystery_guest?: string;
     media_url?: string;
+    media_file?: string;
     potential_points?: number;
 }
 
 function toHint(rec: HintRecord, now: Date): Hint {
     const releaseDate = rec.release_date || new Date().toISOString();
+    // Prefer an uploaded file (resolved to a PocketBase file URL), else an external URL.
+    const mediaUrl = rec.media_file ? pb.files.getUrl(rec, rec.media_file) : rec.media_url || undefined;
     return {
         id: rec.id,
         roundNumber: rec.round_number ?? 0,
@@ -34,7 +37,7 @@ function toHint(rec: HintRecord, now: Date): Hint {
         type: (rec.type as Hint['type']) || 'text',
         contentLocation: rec.content_location || undefined,
         contentMysteryGuest: rec.content_mystery_guest || undefined,
-        mediaUrl: rec.media_url || undefined,
+        mediaUrl,
         potentialPoints: rec.potential_points ?? 0,
         isUnlocked: new Date(releaseDate) <= now,
     };
@@ -195,42 +198,41 @@ export function useHints() {
         await queryClient.invalidateQueries({ queryKey: ['my-guesses', userId] });
     };
 
-    /** Upserts the provided hints (admin management) into PocketBase hints collection. */
-    const updateHintsList = async (newHints: Hint[]) => {
-        const updated = newHints.map((h) => ({
-            ...h,
-            isUnlocked: new Date(h.releaseDate) <= new Date(),
-        }));
+    /**
+     * Saves a single hint (admin management) into the PocketBase hints collection.
+     * Supports an optional image/audio file upload (stored in the `media_file` file
+     * field). Throws on failure so the admin sees the error.
+     */
+    const saveHint = async (hint: Hint, file?: File | null) => {
+        const formData = new FormData();
+        formData.append('round_number', String(hint.roundNumber));
+        formData.append('title', hint.title);
+        formData.append('type', hint.type);
+        formData.append('content_location', hint.contentLocation || '');
+        formData.append('content_mystery_guest', hint.contentMysteryGuest || '');
+        formData.append('release_date', hint.releaseDate);
+        formData.append('window_end_date', hint.windowEndDate);
+        formData.append('potential_points', String(hint.potentialPoints));
 
-        try {
-            for (const h of updated) {
-                const payload = {
-                    round_number: h.roundNumber,
-                    title: h.title,
-                    type: h.type,
-                    media_url: h.mediaUrl || '',
-                    content_location: h.contentLocation || '',
-                    content_mystery_guest: h.contentMysteryGuest || '',
-                    release_date: h.releaseDate,
-                    window_end_date: h.windowEndDate,
-                    potential_points: h.potentialPoints,
-                };
-                const existing = await pb
-                    .collection('hints')
-                    .getFirstListItem(`round_number = ${h.roundNumber}`)
-                    .catch(() => null);
-                if (existing) {
-                    await pb.collection('hints').update(existing.id, payload);
-                } else {
-                    await pb.collection('hints').create(payload);
-                }
-            }
-        } catch {
-            // backend unavailable - keep localStorage as fallback below
+        if (file) {
+            // Upload a real file to the media_file field.
+            formData.append('media_file', file);
+        } else if (hint.mediaUrl && hint.mediaUrl.startsWith('http') && !hint.mediaUrl.includes('/api/files/')) {
+            // External media URL (e.g. Unsplash/SoundHelix). Skip blob previews and
+            // already-resolved PocketBase file URLs so existing uploads are preserved.
+            formData.append('media_url', hint.mediaUrl);
         }
 
-        localStorage.setItem(STORAGE_KEY_HINTS_CONFIG, JSON.stringify(updated));
-        queryClient.setQueryData(['hints'], updated);
+        const existing = await pb
+            .collection('hints')
+            .getFirstListItem(`round_number = ${hint.roundNumber}`)
+            .catch(() => null);
+        if (existing) {
+            await pb.collection('hints').update(existing.id, formData);
+        } else {
+            await pb.collection('hints').create(formData);
+        }
+        await queryClient.invalidateQueries({ queryKey: ['hints'] });
     };
 
     // Next locked hint (target of the countdown)
@@ -241,7 +243,7 @@ export function useHints() {
         userGuess,
         loading: isLoading,
         saveGuess,
-        updateHintsList,
+        saveHint,
         nextLockedHint,
         activeRoundNumber,
         activeHint,

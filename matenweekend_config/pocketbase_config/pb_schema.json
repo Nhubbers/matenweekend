@@ -1295,9 +1295,9 @@
         "id": "pbc_hints",
         "listRule": "@request.auth.id != \"\"",
         "viewRule": "@request.auth.id != \"\"",
-        "createRule": null,
-        "updateRule": null,
-        "deleteRule": null,
+        "createRule": "@request.auth.isAdmin = true",
+        "updateRule": "@request.auth.isAdmin = true",
+        "deleteRule": "@request.auth.isAdmin = true",
         "name": "hints",
         "type": "base",
         "fields": [
@@ -1361,6 +1361,31 @@
                 "required": false,
                 "system": false,
                 "type": "url"
+            },
+            {
+                "hidden": false,
+                "id": "file_media_file",
+                "maxSelect": 1,
+                "maxSize": 15728640,
+                "mimeTypes": [
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp",
+                    "image/gif",
+                    "image/heic",
+                    "audio/mpeg",
+                    "audio/mp3",
+                    "audio/wav",
+                    "audio/ogg",
+                    "audio/m4a"
+                ],
+                "name": "media_file",
+                "presentable": false,
+                "protected": false,
+                "required": false,
+                "system": false,
+                "thumbs": null,
+                "type": "file"
             },
             {
                 "autogeneratePattern": "",

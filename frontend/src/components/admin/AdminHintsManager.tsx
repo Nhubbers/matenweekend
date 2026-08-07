@@ -4,6 +4,7 @@ import { useHints, useAllGuesses, useRoundAnswers } from '@/hooks/useHints';
 import { pb } from '@/lib/pocketbase';
 import { EUROPEAN_COUNTRIES } from '@/data/mockHints';
 import { calculatePayout } from '@/lib/guessPayout';
+import { getErrorMessage } from '@/lib/errors';
 import { useToast } from '@/contexts/ToastContext';
 import { ConfirmDialog } from '@/components/common';
 import type { Hint, Submission } from '@/types';
@@ -11,10 +12,12 @@ import type { Hint, Submission } from '@/types';
 export function AdminHintsManager() {
     const queryClient = useQueryClient();
     const toast = useToast();
-    const { hints, updateHintsList } = useHints();
+    const { hints, saveHint } = useHints();
     const { guesses: submissions, refetch: refetchSubmissions } = useAllGuesses();
     const { roundAnswers, upsertRoundAnswer } = useRoundAnswers();
     const [selectedHint, setSelectedHint] = useState<Hint | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isSavingHint, setIsSavingHint] = useState(false);
     const [isAwarded, setIsAwarded] = useState(false);
     const [isAwarding, setIsAwarding] = useState(false);
     const [deletingGuess, setDeletingGuess] = useState<Submission | null>(null);
@@ -65,26 +68,29 @@ export function AdminHintsManager() {
         }
     };
 
-    const handleSaveHint = (e: React.FormEvent) => {
+    const handleSaveHint = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedHint) return;
+        if (!selectedHint || isSavingHint) return;
 
-        const updated = hints.map((h) => (h.id === selectedHint.id ? { ...selectedHint } : h));
-        void updateHintsList(updated);
-        setSelectedHint(null);
+        setIsSavingHint(true);
+        try {
+            await saveHint(selectedHint, selectedFile);
+            toast.success(`Hint #${selectedHint.roundNumber} opgeslagen!`);
+            setSelectedHint(null);
+            setSelectedFile(null);
+        } catch (err) {
+            toast.error(getErrorMessage(err));
+        } finally {
+            setIsSavingHint(false);
+        }
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && selectedHint) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setSelectedHint({
-                    ...selectedHint,
-                    mediaUrl: reader.result as string,
-                });
-            };
-            reader.readAsDataURL(file);
+            // Store the actual File for upload; show a local object-URL preview only.
+            setSelectedFile(file);
+            setSelectedHint({ ...selectedHint, mediaUrl: URL.createObjectURL(file) });
         }
     };
 
@@ -343,7 +349,10 @@ export function AdminHintsManager() {
                                     </td>
                                     <td className="text-right">
                                         <button
-                                            onClick={() => setSelectedHint(hint)}
+                                            onClick={() => {
+                                                setSelectedFile(null);
+                                                setSelectedHint(hint);
+                                            }}
                                             className="btn btn-ghost btn-xs text-primary font-bold"
                                         >
                                             Bewerken ✏️
@@ -493,7 +502,10 @@ export function AdminHintsManager() {
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() => setSelectedHint({ ...selectedHint, mediaUrl: '' })}
+                                                onClick={() => {
+                                                    setSelectedFile(null);
+                                                    setSelectedHint({ ...selectedHint, mediaUrl: '' });
+                                                }}
                                                 className="btn btn-circle btn-xs btn-error absolute top-2 right-2 text-white shadow-md"
                                                 title="Verwijder foto"
                                             >
@@ -566,12 +578,19 @@ export function AdminHintsManager() {
                                 <button
                                     type="button"
                                     className="btn btn-ghost rounded-xl"
-                                    onClick={() => setSelectedHint(null)}
+                                    onClick={() => {
+                                        setSelectedFile(null);
+                                        setSelectedHint(null);
+                                    }}
                                 >
                                     Annuleren
                                 </button>
-                                <button type="submit" className="btn btn-primary rounded-xl font-bold px-6">
-                                    Opslaan
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary rounded-xl font-bold px-6"
+                                    disabled={isSavingHint}
+                                >
+                                    {isSavingHint ? '🔄 Opslaan...' : 'Opslaan'}
                                 </button>
                             </div>
                         </form>
