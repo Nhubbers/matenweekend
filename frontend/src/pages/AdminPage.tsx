@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { PageContainer } from '@/components/layout';
-import { AdminActivityList, PointsForm, NewsManager } from '@/components/admin';
+import { AdminActivityList, PointsForm, NewsManager, AdminHintsManager } from '@/components/admin';
 import { nl } from '@/lib/translations';
 import { cn } from '@/lib/utils';
 
-type AdminTab = 'activities' | 'points' | 'news';
+type AdminTab = 'activities' | 'hints' | 'points' | 'news';
 
 const tabs: { value: AdminTab; label: string }[] = [
     { value: 'activities', label: nl.activities },
+    { value: 'hints', label: '🕵️ Hints' },
     { value: 'points', label: nl.points },
     { value: 'news', label: nl.news },
 ];
@@ -34,6 +35,7 @@ export function AdminPage() {
             </div>
 
             {activeTab === 'activities' && <AdminActivityList />}
+            {activeTab === 'hints' && <AdminHintsManager />}
             {activeTab === 'points' && <PointsForm />}
             {activeTab === 'news' && <NewsManager />}
         </PageContainer>

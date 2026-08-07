@@ -7,3 +7,4 @@ export { ActivityDetailPage } from './ActivityDetailPage';
 export { RankingPage } from './RankingPage';
 export { ProfilePage } from './ProfilePage';
 export { AdminPage } from './AdminPage';
+export { HintsPage } from './HintsPage';

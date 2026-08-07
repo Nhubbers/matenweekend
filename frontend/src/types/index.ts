@@ -122,3 +122,54 @@ export interface CreateActivityData {
     image?: File;
     creator?: string;
 }
+
+// Hints & Guesses feature types
+export type HintType = 'image' | 'audio' | 'text' | 'combined';
+
+export interface Hint {
+    id: string;
+    roundNumber: number; // 1 to 5
+    title: string;
+    releaseDate: string; // ISO date string
+    windowEndDate: string; // ISO date string for 7-day guessing window
+    type: HintType;
+    contentLocation?: string;
+    contentMysteryGuest?: string;
+    mediaUrl?: string;
+    potentialPoints: number;
+    isUnlocked: boolean;
+}
+
+export interface UserGuess {
+    id?: string;
+    userId: string;
+    roundNumber: number;
+    locationCountry: string;
+    mysteryGuestName: string;
+    wagerPoints: number;
+    submittedAt: string;
+}
+
+// Admin-facing submission feed entry (from the PocketBase `guesses` collection,
+// expanded with the submitting user). Backed by the Hints & Mysteries payout flow.
+export interface Submission {
+    id: string;
+    userId: string;
+    userName: string;
+    roundNumber: number;
+    locationCountry: string;
+    mysteryGuestName: string;
+    wagerPoints: number;
+    submittedAt: string;
+    resolved: boolean;
+    awardedPoints?: number;
+}
+
+// Admin-managed correct answer for a round (from the PocketBase `round_answers`
+// collection - admin-only so participants cannot read the answers).
+export interface RoundAnswer {
+    id: string;
+    roundNumber: number;
+    correctCountry: string;
+    correctGuest: string;
+}

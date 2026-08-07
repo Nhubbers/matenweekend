@@ -135,6 +135,34 @@ export const nl = {
     noCoOrganizers: 'Geen mede-organisatoren',
     addParticipant: 'Deelnemer toevoegen',
     noActivitiesInCategory: 'Er zijn nog geen activiteiten in deze categorie.',
+
+    // Hints & Mysteries
+    hints: 'Hints',
+    hintsTitle: 'Trip Hints & Mysterie',
+    nextHintCountdown: 'Volgende hint ontgrendelt in',
+    allHintsUnlocked: 'Alle hints zijn ontgrendeld!',
+    guessHeader: 'Jouw Voorspellingen',
+    locationGuess: 'Locatie (Land)',
+    mysteryGuestGuess: 'Mystery Guest (Volledige Naam)',
+    wagerPoints: 'Inzet Punten (Multiplier)',
+    submitGuess: 'Voorspelling Opslaan',
+    updateGuess: 'Voorspelling Aanpassen',
+    earlyBirdBonus: 'Early Bird Payout',
+    comboBonusNotice: '🏆 Alleen in de finale ronde: +50 Bonus Punten als je beide goed hebt!',
+    guessWindowClosed: 'Inzendtermijn voor deze ronde is gesloten',
+    currentGuess: 'Huidige Voorspelling',
+    selectCountry: 'Selecteer een land...',
+    enterFullName: 'Voer volledige naam in...',
+    lockedHint: 'Ontgrendelt op',
+    audioHintTitle: 'Stem Teaser 🎙️',
+    imageHintTitle: 'Foto Teaser 🖼️',
+    placeholderHintTitle: 'Mystery Hint Placeholder 🕵️',
+    guessSavedSuccess: 'Je voorspelling is succesvol opgeslagen!',
+    guessSavedOffline: '⚠️ Opgeslagen in lokaal geheugen (geen serververbinding)',
+    guessSaveError: 'Opslaan mislukt. Probeer het opnieuw.',
+    confirmSaveTitle: 'Weet je het zeker?',
+    confirmSaveMessage:
+        'Je kunt je voorspelling maar één keer opslaan en deze daarna niet meer aanpassen. Controleer je antwoorden goed voordat je ze definitief indient!',
 };
 
 export type TranslationKey = keyof typeof nl;
