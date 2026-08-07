@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
-import { INITIAL_HINTS } from '@/data/mockHints';
 import type { Hint, RoundAnswer, Submission, User, UserGuess } from '@/types';
 
 /* -------------------------------------------------------------------------- */
@@ -84,14 +83,6 @@ function toSubmission(rec: GuessRecord): Submission {
     };
 }
 
-/** Static/seed hints used when PocketBase is unreachable or has no rows yet. */
-function loadFallbackHints(): Hint[] {
-    // The seed data in code is the source of truth for the fallback path, so edits
-    // to INITIAL_HINTS always take effect (no stale localStorage override).
-    const now = new Date();
-    return INITIAL_HINTS.map((h) => ({ ...h, isUnlocked: new Date(h.releaseDate) <= now }));
-}
-
 /* -------------------------------------------------------------------------- */
 /*  Hooks                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -100,23 +91,22 @@ export function useHints() {
     const queryClient = useQueryClient();
     const userId = pb.authStore.record?.id;
 
-    // Fetch hints from PocketBase, falling back to the static seed data.
-    const { data: pbHints = [], isLoading } = useQuery<Hint[]>({
+    // Fetch hints from PocketBase - the backend is the single source of truth
+    // (no local/seed fallback). Managed via the admin panel / migrations.
+    const { data: hints = [], isLoading } = useQuery<Hint[]>({
         queryKey: ['hints'],
         queryFn: async () => {
             try {
                 const records = await pb.collection('hints').getFullList<HintRecord>({
                     sort: 'round_number',
                 });
-                if (records.length) return records.map((r) => toHint(r, new Date()));
+                return records.map((r) => toHint(r, new Date()));
             } catch {
-                // backend unreachable / not configured yet
+                // backend unreachable - show nothing rather than stale local data
+                return [];
             }
-            return loadFallbackHints();
         },
     });
-
-    const hints = pbHints.length ? pbHints : loadFallbackHints();
 
     // The active round is the most recently unlocked hint (highest round unlocked).
     const activeHint = useMemo(() => [...hints].reverse().find((h) => h.isUnlocked), [hints]);
