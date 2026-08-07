@@ -4,7 +4,6 @@ import { pb } from '@/lib/pocketbase';
 import { INITIAL_HINTS } from '@/data/mockHints';
 import type { Hint, RoundAnswer, Submission, User, UserGuess } from '@/types';
 
-const STORAGE_KEY_GUESSES = 'matenweekend_user_guesses';
 const STORAGE_KEY_HINTS_CONFIG = 'matenweekend_hints_config';
 
 /* -------------------------------------------------------------------------- */
@@ -120,7 +119,7 @@ export function useHints() {
     const activeHint = useMemo(() => [...hints].reverse().find((h) => h.isUnlocked), [hints]);
     const activeRoundNumber = activeHint ? activeHint.roundNumber : 1;
 
-    // Fetch the logged-in user's guess for the active round.
+    // Fetch the logged-in user's guess for the active round (from PocketBase only).
     const { data: userGuess = null } = useQuery<UserGuess | null>({
         queryKey: ['guess', userId, activeRoundNumber],
         queryFn: async () => {
@@ -132,13 +131,7 @@ export function useHints() {
                 });
                 if (records.length) return toGuess(records[0]);
             } catch {
-                // backend unreachable - fall through to local storage
-            }
-            try {
-                const stored = localStorage.getItem(`${STORAGE_KEY_GUESSES}_${userId}`);
-                if (stored) return JSON.parse(stored) as UserGuess;
-            } catch {
-                // ignore corrupted local guess
+                // backend unreachable - treat as no guess yet
             }
             return null;
         },
@@ -168,15 +161,17 @@ export function useHints() {
 
     /**
      * Saves (upserts) the active round guess for the logged-in user in PocketBase.
-     * Returns `true` when persisted to the backend, `false` when it only landed in
-     * local storage (e.g. backend not configured / offline).
+     * Predictions are NEVER stored locally - if the server write fails, this throws
+     * so the caller can surface the error to the user.
      */
     const saveGuess = async (guessData: {
         locationCountry: string;
         mysteryGuestName: string;
         wagerPoints: number;
-    }): Promise<boolean> => {
-        if (!userId || !activeRoundNumber) return false;
+    }): Promise<void> => {
+        if (!userId || !activeRoundNumber) {
+            throw new Error('Je moet ingelogd zijn om een voorspelling op te slaan.');
+        }
 
         const payload = {
             user: userId,
@@ -187,33 +182,17 @@ export function useHints() {
             submitted_at: new Date().toISOString(),
         };
 
-        try {
-            const existing = await pb.collection('guesses').getFullList<GuessRecord>({
-                filter: `user = "${userId}" && round_number = ${activeRoundNumber}`,
-                limit: 1,
-            });
-            if (existing.length) {
-                await pb.collection('guesses').update(existing[0].id, payload);
-            } else {
-                await pb.collection('guesses').create(payload);
-            }
-            await queryClient.invalidateQueries({ queryKey: ['guess', userId, activeRoundNumber] });
-            await queryClient.invalidateQueries({ queryKey: ['my-guesses', userId] });
-            return true;
-        } catch {
-            // Offline fallback - keep the feature usable until the backend responds.
-            const newGuess: UserGuess = {
-                userId,
-                roundNumber: activeRoundNumber,
-                locationCountry: guessData.locationCountry,
-                mysteryGuestName: guessData.mysteryGuestName,
-                wagerPoints: guessData.wagerPoints,
-                submittedAt: new Date().toISOString(),
-            };
-            localStorage.setItem(`${STORAGE_KEY_GUESSES}_${userId}`, JSON.stringify(newGuess));
-            await queryClient.invalidateQueries({ queryKey: ['guess', userId, activeRoundNumber] });
-            return false;
+        const existing = await pb.collection('guesses').getFullList<GuessRecord>({
+            filter: `user = "${userId}" && round_number = ${activeRoundNumber}`,
+            limit: 1,
+        });
+        if (existing.length) {
+            await pb.collection('guesses').update(existing[0].id, payload);
+        } else {
+            await pb.collection('guesses').create(payload);
         }
+        await queryClient.invalidateQueries({ queryKey: ['guess', userId, activeRoundNumber] });
+        await queryClient.invalidateQueries({ queryKey: ['my-guesses', userId] });
     };
 
     /** Upserts the provided hints (admin management) into PocketBase hints collection. */

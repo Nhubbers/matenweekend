@@ -486,16 +486,16 @@ cronAdd('activityCompletionReminder', '0 * * * *', () => {
 //   available = settled totalPoints - sum(pending/unresolved wagers)
 // This enforces at the database level what the UI already caps on the slider.
 
-function assertGuessWagerWithinBalance(record, excludeId) {
-    const userId = record.get('user');
-    const wager = record.getFloat('wager_points') || 0;
+// (Logic is inlined in each hook because hook callbacks cannot reference top-level
+// user-defined helper functions in the JSVM.)
 
-    if (!userId) {
-        throw new BadRequestError('Ongeldige voorspelling: gebruiker ontbreekt.');
-    }
-    if (wager < 0) {
-        throw new BadRequestError('Inzet mag niet negatief zijn.');
-    }
+// Validate before a new guess is created.
+onRecordCreate((e) => {
+    const userId = e.record.get('user');
+    const wager = e.record.getFloat('wager_points') || 0;
+
+    if (!userId) throw new BadRequestError('Ongeldige voorspelling: gebruiker ontbreekt.');
+    if (wager < 0) throw new BadRequestError('Inzet mag niet negatief zijn.');
 
     // Sum the user's settled point transactions (the ranking balance).
     const transactions = $app.findRecordsByFilter('point_transactions', "user = '" + userId + "'");
@@ -508,24 +508,16 @@ function assertGuessWagerWithinBalance(record, excludeId) {
     const pendingGuesses = $app.findRecordsByFilter('guesses', "user = '" + userId + "' && resolved != true");
     let pendingWagers = 0;
     pendingGuesses.forEach((g) => {
-        // On update, exclude the record currently being modified from its own pending total.
-        if (!excludeId || g.id !== excludeId) {
-            pendingWagers += g.getFloat('wager_points') || 0;
-        }
+        pendingWagers += g.getFloat('wager_points') || 0;
     });
 
     const available = totalPoints - pendingWagers;
-
     if (wager > available) {
         throw new BadRequestError(
             'Inzet (' + wager + ' pts) is hoger dan je beschikbare saldo (' + available + ' pts).'
         );
     }
-}
 
-// Validate before a new guess is created.
-onRecordCreate((e) => {
-    assertGuessWagerWithinBalance(e.record, null);
     e.next();
 }, 'guesses');
 
@@ -533,7 +525,9 @@ onRecordCreate((e) => {
 // The admin resolving a guess (unchanged wager) must always pass, otherwise the
 // payout of a lost guess would be rejected once its deduction is applied.
 onRecordUpdate((e) => {
-    const newWager = e.record.getFloat('wager_points') || 0;
+    const userId = e.record.get('user');
+    const wager = e.record.getFloat('wager_points') || 0;
+
     let originalWager = 0;
     try {
         const original = $app.findRecordById('guesses', e.record.id);
@@ -541,8 +535,29 @@ onRecordUpdate((e) => {
     } catch (err) {
         originalWager = 0;
     }
-    if (newWager > originalWager) {
-        assertGuessWagerWithinBalance(e.record, e.record.id);
+
+    if (wager > originalWager) {
+        if (!userId) throw new BadRequestError('Ongeldige voorspelling: gebruiker ontbreekt.');
+
+        const transactions = $app.findRecordsByFilter('point_transactions', "user = '" + userId + "'");
+        let totalPoints = 0;
+        transactions.forEach((tx) => {
+            totalPoints += tx.getFloat('amount') || 0;
+        });
+
+        const pendingGuesses = $app.findRecordsByFilter('guesses', "user = '" + userId + "' && resolved != true");
+        let pendingWagers = 0;
+        pendingGuesses.forEach((g) => {
+            if (g.id !== e.record.id) pendingWagers += g.getFloat('wager_points') || 0;
+        });
+
+        const available = totalPoints - pendingWagers;
+        if (wager > available) {
+            throw new BadRequestError(
+                'Inzet (' + wager + ' pts) is hoger dan je beschikbare saldo (' + available + ' pts).'
+            );
+        }
     }
+
     e.next();
 }, 'guesses');

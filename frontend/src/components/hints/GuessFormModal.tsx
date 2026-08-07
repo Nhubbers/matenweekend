@@ -4,6 +4,7 @@ import { nl } from '@/lib/translations';
 import { useToast } from '@/contexts/ToastContext';
 import { ConfirmDialog } from '@/components/common';
 import { calculatePayout } from '@/lib/guessPayout';
+import { getErrorMessage } from '@/lib/errors';
 import type { UserGuess } from '@/types';
 
 interface GuessFormModalProps {
@@ -20,7 +21,7 @@ interface GuessFormModalProps {
         locationCountry: string;
         mysteryGuestName: string;
         wagerPoints: number;
-    }) => void | Promise<boolean>;
+    }) => void | Promise<void>;
 }
 
 export function GuessFormModal({
@@ -69,20 +70,16 @@ export function GuessFormModal({
 
         setIsSubmitting(true);
         try {
-            const persisted = await onSaveGuess({
+            await onSaveGuess({
                 locationCountry,
                 mysteryGuestName,
                 wagerPoints: effectiveWager,
             });
-            if (persisted === false) {
-                toast.warning(nl.guessSavedOffline);
-            } else {
-                toast.success(nl.guessSavedSuccess);
-            }
+            toast.success(nl.guessSavedSuccess);
             setShowConfirm(false);
             onClose();
-        } catch {
-            toast.error(nl.guessSaveError);
+        } catch (err) {
+            toast.error(getErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }
