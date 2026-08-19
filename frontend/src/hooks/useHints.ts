@@ -209,7 +209,17 @@ export function useHints() {
      * Supports an optional image/audio file upload (stored in the `media_file` file
      * field). Throws on failure so the admin sees the error.
      */
-    const saveHint = async (hint: Hint, file?: File | null) => {
+    const saveHint = async (
+        hint: Hint,
+        files?:
+            | {
+                  file?: File | null;
+                  locationFile?: File | null;
+                  mysteryGuestFile?: File | null;
+              }
+            | File
+            | null
+    ) => {
         const formData = new FormData();
         formData.append('round_number', String(hint.roundNumber));
         formData.append('title', hint.title);
@@ -220,19 +230,35 @@ export function useHints() {
         formData.append('window_end_date', hint.windowEndDate);
         formData.append('potential_points', String(hint.potentialPoints));
 
-        if (file) {
-            // Upload a real file to the media_file field.
-            formData.append('media_file', file);
-        } else if (hint.mediaUrl && !hint.mediaUrl.includes('/api/files/')) {
-            // External media URL (e.g. Unsplash/SoundHelix/static path). Skip blob previews and
-            // already-resolved PocketBase file URLs so existing uploads are preserved.
-            formData.append('media_url', hint.mediaUrl);
+        let mainFile: File | null = null;
+        let locFile: File | null = null;
+        let mgFile: File | null = null;
+
+        if (files instanceof File) {
+            mainFile = files;
+        } else if (files) {
+            mainFile = files.file || null;
+            locFile = files.locationFile || null;
+            mgFile = files.mysteryGuestFile || null;
         }
 
-        if (hint.locationMediaUrl) {
+        if (mainFile) {
+            formData.append('media_file', mainFile);
+        }
+        if (locFile) {
+            formData.append('media_file_location', locFile);
+        }
+        if (mgFile) {
+            formData.append('media_file_mystery_guest', mgFile);
+        }
+
+        if (hint.mediaUrl && !hint.mediaUrl.includes('/api/files/')) {
+            formData.append('media_url', hint.mediaUrl);
+        }
+        if (hint.locationMediaUrl && !hint.locationMediaUrl.includes('/api/files/')) {
             formData.append('media_url_location', hint.locationMediaUrl);
         }
-        if (hint.mysteryGuestMediaUrl) {
+        if (hint.mysteryGuestMediaUrl && !hint.mysteryGuestMediaUrl.includes('/api/files/')) {
             formData.append('media_url_mystery_guest', hint.mysteryGuestMediaUrl);
         }
 

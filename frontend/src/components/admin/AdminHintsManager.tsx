@@ -17,6 +17,8 @@ export function AdminHintsManager() {
     const { roundAnswers, upsertRoundAnswer } = useRoundAnswers();
     const [selectedHint, setSelectedHint] = useState<Hint | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedLocationFile, setSelectedLocationFile] = useState<File | null>(null);
+    const [selectedMysteryGuestFile, setSelectedMysteryGuestFile] = useState<File | null>(null);
     const [isSavingHint, setIsSavingHint] = useState(false);
     const [isAwarded, setIsAwarded] = useState(false);
     const [isAwarding, setIsAwarding] = useState(false);
@@ -74,10 +76,16 @@ export function AdminHintsManager() {
 
         setIsSavingHint(true);
         try {
-            await saveHint(selectedHint, selectedFile);
+            await saveHint(selectedHint, {
+                file: selectedFile,
+                locationFile: selectedLocationFile,
+                mysteryGuestFile: selectedMysteryGuestFile,
+            });
             toast.success(`Hint #${selectedHint.roundNumber} opgeslagen!`);
             setSelectedHint(null);
             setSelectedFile(null);
+            setSelectedLocationFile(null);
+            setSelectedMysteryGuestFile(null);
         } catch (err) {
             toast.error(getErrorMessage(err));
         } finally {
@@ -85,12 +93,27 @@ export function AdminHintsManager() {
         }
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleGeneralFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && selectedHint) {
-            // Store the actual File for upload; show a local object-URL preview only.
             setSelectedFile(file);
             setSelectedHint({ ...selectedHint, mediaUrl: URL.createObjectURL(file) });
+        }
+    };
+
+    const handleLocationFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && selectedHint) {
+            setSelectedLocationFile(file);
+            setSelectedHint({ ...selectedHint, locationMediaUrl: URL.createObjectURL(file) });
+        }
+    };
+
+    const handleMysteryGuestFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && selectedHint) {
+            setSelectedMysteryGuestFile(file);
+            setSelectedHint({ ...selectedHint, mysteryGuestMediaUrl: URL.createObjectURL(file) });
         }
     };
 
@@ -483,127 +506,108 @@ export function AdminHintsManager() {
                                 />
                             </div>
 
-                            {/* Photo Upload Section for Image Hints */}
-                            {selectedHint.type === 'image' && (
-                                <div className="form-control bg-base-200/60 p-4 rounded-xl border border-base-300">
-                                    <label className="label p-0 mb-2">
-                                        <span className="label-text font-bold text-xs flex items-center gap-1.5 text-primary">
-                                            🖼️ Upload Foto voor Hint #{selectedHint.roundNumber}
-                                        </span>
-                                    </label>
-
-                                    {/* Preview */}
-                                    {selectedHint.mediaUrl ? (
-                                        <div className="relative rounded-xl overflow-hidden border border-base-300 aspect-video bg-black/5 mb-3">
-                                            <img
-                                                src={selectedHint.mediaUrl}
-                                                alt="Hint Preview"
-                                                className="w-full h-full object-cover"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedFile(null);
-                                                    setSelectedHint({ ...selectedHint, mediaUrl: '' });
-                                                }}
-                                                className="btn btn-circle btn-xs btn-error absolute top-2 right-2 text-white shadow-md"
-                                                title="Verwijder foto"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    ) : null}
-
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        className="file-input file-input-bordered file-input-primary file-input-sm w-full rounded-xl"
-                                    />
-                                    <p className="text-[11px] text-base-content/60 mt-1.5">
-                                        Kies een bestand van je telefoon/computer of vul hieronder een direct URL-adres
-                                        in.
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold text-xs">📍 Locatie Hint Tekst</span>
-                                </label>
-                                <textarea
-                                    value={selectedHint.contentLocation || ''}
-                                    onChange={(e) =>
-                                        setSelectedHint({ ...selectedHint, contentLocation: e.target.value })
-                                    }
-                                    className="textarea textarea-bordered rounded-xl text-sm"
-                                    rows={2}
-                                />
-                            </div>
-
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold text-xs">
-                                        🎭 Mystery Guest Hint Tekst
+                            {/* Location Media Upload Section */}
+                            <div className="form-control bg-primary/5 p-4 rounded-xl border border-primary/15 space-y-2">
+                                <label className="label p-0">
+                                    <span className="label-text font-bold text-xs flex items-center gap-1.5 text-primary">
+                                        📍 Upload Locatie Bestand (bijv. Vogelgeluid Audio MP3)
                                     </span>
                                 </label>
-                                <textarea
-                                    value={selectedHint.contentMysteryGuest || ''}
-                                    onChange={(e) =>
-                                        setSelectedHint({ ...selectedHint, contentMysteryGuest: e.target.value })
-                                    }
-                                    className="textarea textarea-bordered rounded-xl text-sm"
-                                    rows={2}
+                                {selectedHint.locationMediaUrl ? (
+                                    <div className="bg-base-100 p-2.5 rounded-lg border border-base-200">
+                                        <p className="text-[11px] font-semibold mb-1 text-base-content/70">
+                                            Huidige media preview:
+                                        </p>
+                                        {selectedHint.locationMediaUrl.match(/\.(mp3|wav|ogg|m4a)/i) ||
+                                        selectedHint.locationMediaUrl.startsWith('blob:') ? (
+                                            <audio controls className="w-full h-8">
+                                                <source src={selectedHint.locationMediaUrl} />
+                                            </audio>
+                                        ) : (
+                                            <div className="aspect-video relative rounded-lg overflow-hidden border border-base-200">
+                                                <img
+                                                    src={selectedHint.locationMediaUrl}
+                                                    alt="Location preview"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null}
+                                <input
+                                    type="file"
+                                    accept="audio/*,image/*"
+                                    onChange={handleLocationFileUpload}
+                                    className="file-input file-input-bordered file-input-primary file-input-sm w-full rounded-xl"
                                 />
-                            </div>
-
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold text-xs">
-                                        📍 Locatie Media URL (Audio / Afbeelding)
-                                    </span>
-                                </label>
                                 <input
                                     type="text"
                                     value={selectedHint.locationMediaUrl || ''}
                                     onChange={(e) =>
                                         setSelectedHint({ ...selectedHint, locationMediaUrl: e.target.value })
                                     }
-                                    className="input input-bordered input-sm rounded-xl"
-                                    placeholder="/hints/hint2-location-audio.mp3"
+                                    className="input input-bordered input-xs rounded-lg mt-1 text-xs"
+                                    placeholder="Of vul een media URL / pad in..."
                                 />
                             </div>
 
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold text-xs">
-                                        🎭 Mystery Guest Media URL (Audio / Afbeelding)
+                            {/* Mystery Guest Media Upload Section */}
+                            <div className="form-control bg-secondary/5 p-4 rounded-xl border border-secondary/15 space-y-2">
+                                <label className="label p-0">
+                                    <span className="label-text font-bold text-xs flex items-center gap-1.5 text-secondary">
+                                        🎭 Upload Mystery Guest Bestand (bijv. Babyfoto PNG)
                                     </span>
                                 </label>
+                                {selectedHint.mysteryGuestMediaUrl ? (
+                                    <div className="bg-base-100 p-2.5 rounded-lg border border-base-200">
+                                        <p className="text-[11px] font-semibold mb-1 text-base-content/70">
+                                            Huidige media preview:
+                                        </p>
+                                        {selectedHint.mysteryGuestMediaUrl.match(/\.(mp3|wav|ogg|m4a)/i) ? (
+                                            <audio controls className="w-full h-8">
+                                                <source src={selectedHint.mysteryGuestMediaUrl} />
+                                            </audio>
+                                        ) : (
+                                            <div className="aspect-video relative rounded-lg overflow-hidden border border-base-200 max-h-40">
+                                                <img
+                                                    src={selectedHint.mysteryGuestMediaUrl}
+                                                    alt="Mystery Guest preview"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null}
+                                <input
+                                    type="file"
+                                    accept="image/*,audio/*"
+                                    onChange={handleMysteryGuestFileUpload}
+                                    className="file-input file-input-bordered file-input-secondary file-input-sm w-full rounded-xl"
+                                />
                                 <input
                                     type="text"
                                     value={selectedHint.mysteryGuestMediaUrl || ''}
                                     onChange={(e) =>
                                         setSelectedHint({ ...selectedHint, mysteryGuestMediaUrl: e.target.value })
                                     }
-                                    className="input input-bordered input-sm rounded-xl"
-                                    placeholder="/hints/hint2-mg-picture.png"
+                                    className="input input-bordered input-xs rounded-lg mt-1 text-xs"
+                                    placeholder="Of vul een media URL / pad in..."
                                 />
                             </div>
 
-                            {selectedHint.type !== 'text' && (
-                                <div className="form-control">
-                                    <label className="label">
-                                        <span className="label-text font-semibold text-xs">
-                                            Algemene Media URL (Fallback)
+                            {/* General Main File Upload (for single image/audio hints) */}
+                            {selectedHint.type !== 'combined' && selectedHint.type !== 'text' && (
+                                <div className="form-control bg-base-200/60 p-4 rounded-xl border border-base-300 space-y-2">
+                                    <label className="label p-0">
+                                        <span className="label-text font-bold text-xs flex items-center gap-1.5 text-base-content">
+                                            🖼️ Upload Algemeen Media Bestand
                                         </span>
                                     </label>
                                     <input
-                                        type="text"
-                                        value={selectedHint.mediaUrl || ''}
-                                        onChange={(e) => setSelectedHint({ ...selectedHint, mediaUrl: e.target.value })}
-                                        className="input input-bordered input-sm rounded-xl"
-                                        placeholder="/hints/..."
+                                        type="file"
+                                        accept="image/*,audio/*"
+                                        onChange={handleGeneralFileUpload}
+                                        className="file-input file-input-bordered file-input-sm w-full rounded-xl"
                                     />
                                 </div>
                             )}
