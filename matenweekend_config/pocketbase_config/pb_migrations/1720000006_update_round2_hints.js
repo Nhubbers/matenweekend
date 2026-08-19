@@ -65,6 +65,7 @@ migrate(
                 'Luister naar het zanggeluid van deze vogel om de geheime locatie te achterhalen!'
             );
             r2.set('content_mystery_guest', 'Herken jij de Mystery Guest op deze schattige babyfoto?');
+            r2.set('release_date', '2026-08-20 00:00:00');
             app.save(r2);
         }
     },

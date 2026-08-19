@@ -70,7 +70,7 @@ export const INITIAL_HINTS: Hint[] = [
         id: 'hint-2',
         roundNumber: 2,
         title: 'Hint #2',
-        releaseDate: '2026-08-20T12:00:00.000Z',
+        releaseDate: '2026-08-20T00:00:00.000Z',
         windowEndDate: '2026-08-27T23:59:59.000Z',
         type: 'combined',
         contentLocation: 'Eentje voor de vogelaars onder ons!',

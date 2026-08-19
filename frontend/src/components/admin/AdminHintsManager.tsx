@@ -7,6 +7,7 @@ import { calculatePayout } from '@/lib/guessPayout';
 import { getErrorMessage } from '@/lib/errors';
 import { useToast } from '@/contexts/ToastContext';
 import { ConfirmDialog } from '@/components/common';
+import { HintCard } from '@/components/hints/HintCard';
 import type { Hint, Submission } from '@/types';
 
 export function AdminHintsManager() {
@@ -25,6 +26,7 @@ export function AdminHintsManager() {
     const [deletingGuess, setDeletingGuess] = useState<Submission | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSavingAnswers, setIsSavingAnswers] = useState(false);
+    const [previewModalHint, setPreviewModalHint] = useState<Hint | null>(null);
     // Editable per-round correct answers, keyed by round number.
     const [answersByRound, setAnswersByRound] = useState<Record<number, { country: string; guest: string }>>({});
 
@@ -371,15 +373,28 @@ export function AdminHintsManager() {
                                         )}
                                     </td>
                                     <td className="text-right">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedFile(null);
-                                                setSelectedHint(hint);
-                                            }}
-                                            className="btn btn-ghost btn-xs text-primary font-bold"
-                                        >
-                                            Bewerken ✏️
-                                        </button>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewModalHint(hint)}
+                                                className="btn btn-ghost btn-xs text-base-content/70 font-semibold gap-1"
+                                                title="Bekijk hoe deze hint eruit ziet"
+                                            >
+                                                👁️ Preview
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedFile(null);
+                                                    setSelectedLocationFile(null);
+                                                    setSelectedMysteryGuestFile(null);
+                                                    setSelectedHint(hint);
+                                                }}
+                                                className="btn btn-ghost btn-xs text-primary font-bold"
+                                            >
+                                                Bewerken ✏️
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -469,169 +484,195 @@ export function AdminHintsManager() {
 
             {/* Edit Hint Modal */}
             {selectedHint && (
-                <dialog className="modal modal-open bg-black/60 backdrop-blur-sm">
-                    <div className="modal-box max-w-lg p-6 rounded-2xl">
-                        <h3 className="font-extrabold text-lg mb-4 flex items-center gap-2">
-                            <span>✏️</span> Hint #{selectedHint.roundNumber} Bewerken
-                        </h3>
-                        <form onSubmit={handleSaveHint} className="space-y-4">
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold text-xs">Titel</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={selectedHint.title}
-                                    onChange={(e) => setSelectedHint({ ...selectedHint, title: e.target.value })}
-                                    className="input input-bordered input-sm rounded-xl"
-                                    required
-                                />
-                            </div>
+                <dialog className="modal modal-open bg-black/70 backdrop-blur-sm">
+                    <div className="modal-box max-w-4xl p-6 rounded-3xl max-h-[90vh]">
+                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-base-300">
+                            <h3 className="font-extrabold text-lg flex items-center gap-2">
+                                <span>✏️</span> Hint #{selectedHint.roundNumber} Bewerken & Live Preview
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedFile(null);
+                                    setSelectedLocationFile(null);
+                                    setSelectedMysteryGuestFile(null);
+                                    setSelectedHint(null);
+                                }}
+                                className="btn btn-circle btn-xs btn-ghost"
+                            >
+                                ✕
+                            </button>
+                        </div>
 
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold text-xs">Release Datum & Tijd</span>
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    value={selectedHint.releaseDate.slice(0, 16)}
-                                    onChange={(e) =>
-                                        setSelectedHint({
-                                            ...selectedHint,
-                                            releaseDate: new Date(e.target.value).toISOString(),
-                                        })
-                                    }
-                                    className="input input-bordered input-sm rounded-xl"
-                                    required
-                                />
-                            </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                            {/* Form Left Side */}
+                            <form onSubmit={handleSaveHint} className="space-y-4">
+                                <div className="form-control">
+                                    <label className="label py-1">
+                                        <span className="label-text font-semibold text-xs">Titel</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedHint.title}
+                                        onChange={(e) => setSelectedHint({ ...selectedHint, title: e.target.value })}
+                                        className="input input-bordered input-sm rounded-xl"
+                                        required
+                                    />
+                                </div>
 
-                            {/* Location Media Upload Section */}
-                            <div className="form-control bg-primary/5 p-4 rounded-xl border border-primary/15 space-y-2">
-                                <label className="label p-0">
-                                    <span className="label-text font-bold text-xs flex items-center gap-1.5 text-primary">
-                                        📍 Upload Locatie Bestand (bijv. Vogelgeluid Audio MP3)
-                                    </span>
-                                </label>
-                                {selectedHint.locationMediaUrl ? (
-                                    <div className="bg-base-100 p-2.5 rounded-lg border border-base-200">
-                                        <p className="text-[11px] font-semibold mb-1 text-base-content/70">
-                                            Huidige media preview:
-                                        </p>
-                                        {selectedHint.locationMediaUrl.match(/\.(mp3|wav|ogg|m4a)/i) ||
-                                        selectedHint.locationMediaUrl.startsWith('blob:') ? (
-                                            <audio controls className="w-full h-8">
-                                                <source src={selectedHint.locationMediaUrl} />
-                                            </audio>
-                                        ) : (
-                                            <div className="aspect-video relative rounded-lg overflow-hidden border border-base-200">
-                                                <img
-                                                    src={selectedHint.locationMediaUrl}
-                                                    alt="Location preview"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-                                <input
-                                    type="file"
-                                    accept="audio/*,image/*"
-                                    onChange={handleLocationFileUpload}
-                                    className="file-input file-input-bordered file-input-primary file-input-sm w-full rounded-xl"
-                                />
-                                <input
-                                    type="text"
-                                    value={selectedHint.locationMediaUrl || ''}
-                                    onChange={(e) =>
-                                        setSelectedHint({ ...selectedHint, locationMediaUrl: e.target.value })
-                                    }
-                                    className="input input-bordered input-xs rounded-lg mt-1 text-xs"
-                                    placeholder="Of vul een media URL / pad in..."
-                                />
-                            </div>
+                                <div className="form-control">
+                                    <label className="label py-1">
+                                        <span className="label-text font-semibold text-xs">Release Datum & Tijd</span>
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        value={selectedHint.releaseDate.slice(0, 16)}
+                                        onChange={(e) =>
+                                            setSelectedHint({
+                                                ...selectedHint,
+                                                releaseDate: new Date(e.target.value).toISOString(),
+                                            })
+                                        }
+                                        className="input input-bordered input-sm rounded-xl"
+                                        required
+                                    />
+                                </div>
 
-                            {/* Mystery Guest Media Upload Section */}
-                            <div className="form-control bg-secondary/5 p-4 rounded-xl border border-secondary/15 space-y-2">
-                                <label className="label p-0">
-                                    <span className="label-text font-bold text-xs flex items-center gap-1.5 text-secondary">
-                                        🎭 Upload Mystery Guest Bestand (bijv. Babyfoto PNG)
-                                    </span>
-                                </label>
-                                {selectedHint.mysteryGuestMediaUrl ? (
-                                    <div className="bg-base-100 p-2.5 rounded-lg border border-base-200">
-                                        <p className="text-[11px] font-semibold mb-1 text-base-content/70">
-                                            Huidige media preview:
-                                        </p>
-                                        {selectedHint.mysteryGuestMediaUrl.match(/\.(mp3|wav|ogg|m4a)/i) ? (
-                                            <audio controls className="w-full h-8">
-                                                <source src={selectedHint.mysteryGuestMediaUrl} />
-                                            </audio>
-                                        ) : (
-                                            <div className="aspect-video relative rounded-lg overflow-hidden border border-base-200 max-h-40">
-                                                <img
-                                                    src={selectedHint.mysteryGuestMediaUrl}
-                                                    alt="Mystery Guest preview"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-                                <input
-                                    type="file"
-                                    accept="image/*,audio/*"
-                                    onChange={handleMysteryGuestFileUpload}
-                                    className="file-input file-input-bordered file-input-secondary file-input-sm w-full rounded-xl"
-                                />
-                                <input
-                                    type="text"
-                                    value={selectedHint.mysteryGuestMediaUrl || ''}
-                                    onChange={(e) =>
-                                        setSelectedHint({ ...selectedHint, mysteryGuestMediaUrl: e.target.value })
-                                    }
-                                    className="input input-bordered input-xs rounded-lg mt-1 text-xs"
-                                    placeholder="Of vul een media URL / pad in..."
-                                />
-                            </div>
+                                <div className="form-control">
+                                    <label className="label py-1">
+                                        <span className="label-text font-semibold text-xs">📍 Locatie Hint Tekst</span>
+                                    </label>
+                                    <textarea
+                                        value={selectedHint.contentLocation || ''}
+                                        onChange={(e) =>
+                                            setSelectedHint({ ...selectedHint, contentLocation: e.target.value })
+                                        }
+                                        className="textarea textarea-bordered rounded-xl text-sm"
+                                        rows={2}
+                                        placeholder="Bijv. Luister naar de vogel..."
+                                    />
+                                </div>
 
-                            {/* General Main File Upload (for single image/audio hints) */}
-                            {selectedHint.type !== 'combined' && selectedHint.type !== 'text' && (
-                                <div className="form-control bg-base-200/60 p-4 rounded-xl border border-base-300 space-y-2">
+                                <div className="form-control">
+                                    <label className="label py-1">
+                                        <span className="label-text font-semibold text-xs">
+                                            🎭 Mystery Guest Hint Tekst
+                                        </span>
+                                    </label>
+                                    <textarea
+                                        value={selectedHint.contentMysteryGuest || ''}
+                                        onChange={(e) =>
+                                            setSelectedHint({ ...selectedHint, contentMysteryGuest: e.target.value })
+                                        }
+                                        className="textarea textarea-bordered rounded-xl text-sm"
+                                        rows={2}
+                                        placeholder="Bijv. Herken jij deze baby..."
+                                    />
+                                </div>
+
+                                {/* Location Media Upload Section */}
+                                <div className="form-control bg-primary/5 p-3.5 rounded-2xl border border-primary/15 space-y-2">
                                     <label className="label p-0">
-                                        <span className="label-text font-bold text-xs flex items-center gap-1.5 text-base-content">
-                                            🖼️ Upload Algemeen Media Bestand
+                                        <span className="label-text font-bold text-xs flex items-center gap-1.5 text-primary">
+                                            📍 Upload Locatie Bestand (bijv. Vogelgeluid Audio MP3)
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="audio/*,image/*"
+                                        onChange={handleLocationFileUpload}
+                                        className="file-input file-input-bordered file-input-primary file-input-sm w-full rounded-xl"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={selectedHint.locationMediaUrl || ''}
+                                        onChange={(e) =>
+                                            setSelectedHint({ ...selectedHint, locationMediaUrl: e.target.value })
+                                        }
+                                        className="input input-bordered input-xs rounded-lg text-xs"
+                                        placeholder="Of vul een media URL / pad in..."
+                                    />
+                                </div>
+
+                                {/* Mystery Guest Media Upload Section */}
+                                <div className="form-control bg-secondary/5 p-3.5 rounded-2xl border border-secondary/15 space-y-2">
+                                    <label className="label p-0">
+                                        <span className="label-text font-bold text-xs flex items-center gap-1.5 text-secondary">
+                                            🎭 Upload Mystery Guest Bestand (bijv. Babyfoto PNG)
                                         </span>
                                     </label>
                                     <input
                                         type="file"
                                         accept="image/*,audio/*"
-                                        onChange={handleGeneralFileUpload}
-                                        className="file-input file-input-bordered file-input-sm w-full rounded-xl"
+                                        onChange={handleMysteryGuestFileUpload}
+                                        className="file-input file-input-bordered file-input-secondary file-input-sm w-full rounded-xl"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={selectedHint.mysteryGuestMediaUrl || ''}
+                                        onChange={(e) =>
+                                            setSelectedHint({ ...selectedHint, mysteryGuestMediaUrl: e.target.value })
+                                        }
+                                        className="input input-bordered input-xs rounded-lg text-xs"
+                                        placeholder="Of vul een media URL / pad in..."
                                     />
                                 </div>
-                            )}
 
-                            <div className="modal-action mt-6">
-                                <button
-                                    type="button"
-                                    className="btn btn-ghost rounded-xl"
-                                    onClick={() => {
-                                        setSelectedFile(null);
-                                        setSelectedHint(null);
-                                    }}
-                                >
-                                    Annuleren
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary rounded-xl font-bold px-6"
-                                    disabled={isSavingHint}
-                                >
-                                    {isSavingHint ? '🔄 Opslaan...' : 'Opslaan'}
-                                </button>
+                                {/* General Main File Upload (for single image/audio hints) */}
+                                {selectedHint.type !== 'combined' && selectedHint.type !== 'text' && (
+                                    <div className="form-control bg-base-200/60 p-3.5 rounded-2xl border border-base-300 space-y-2">
+                                        <label className="label p-0">
+                                            <span className="label-text font-bold text-xs flex items-center gap-1.5 text-base-content">
+                                                🖼️ Upload Algemeen Media Bestand
+                                            </span>
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/*,audio/*"
+                                            onChange={handleGeneralFileUpload}
+                                            className="file-input file-input-bordered file-input-sm w-full rounded-xl"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="modal-action mt-4 pt-2 border-t border-base-200">
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost rounded-xl"
+                                        onClick={() => {
+                                            setSelectedFile(null);
+                                            setSelectedLocationFile(null);
+                                            setSelectedMysteryGuestFile(null);
+                                            setSelectedHint(null);
+                                        }}
+                                    >
+                                        Annuleren
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary rounded-xl font-bold px-6"
+                                        disabled={isSavingHint}
+                                    >
+                                        {isSavingHint ? '🔄 Opslaan...' : 'Opslaan'}
+                                    </button>
+                                </div>
+                            </form>
+
+                            {/* Live Preview Right Side */}
+                            <div className="space-y-2.5 lg:sticky lg:top-0">
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-xs font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                                        <span>👁️</span> Live Preview Deelnemer
+                                    </span>
+                                    <span className="badge badge-sm badge-success text-white font-bold">
+                                        Ontgrendelde Weergave
+                                    </span>
+                                </div>
+                                <div className="bg-base-200/60 p-3.5 rounded-3xl border border-base-300 shadow-inner">
+                                    <HintCard hint={{ ...selectedHint, isUnlocked: true }} />
+                                </div>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </dialog>
             )}
@@ -650,6 +691,41 @@ export function AdminHintsManager() {
                 onCancel={() => setDeletingGuess(null)}
                 variant="danger"
             />
+
+            {/* Standalone Preview Modal */}
+            {previewModalHint && (
+                <dialog
+                    className="modal modal-open bg-black/70 backdrop-blur-sm"
+                    onClick={() => setPreviewModalHint(null)}
+                >
+                    <div className="modal-box max-w-2xl p-6 rounded-3xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-base-300">
+                            <h3 className="font-extrabold text-lg flex items-center gap-2">
+                                <span>👁️</span> Deelnemer Preview: Hint #{previewModalHint.roundNumber}
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewModalHint(null)}
+                                className="btn btn-circle btn-xs btn-ghost"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <HintCard hint={{ ...previewModalHint, isUnlocked: true }} />
+                        </div>
+                        <div className="modal-action mt-4 pt-2 border-t border-base-200">
+                            <button
+                                type="button"
+                                onClick={() => setPreviewModalHint(null)}
+                                className="btn btn-ghost rounded-xl font-bold"
+                            >
+                                Sluiten
+                            </button>
+                        </div>
+                    </div>
+                </dialog>
+            )}
         </div>
     );
 }
