@@ -106,6 +106,7 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
                                         🔊 <span>Beluister vogelgeluid (Locatie hint):</span>
                                     </p>
                                     <audio controls className="w-full rounded-lg h-9">
+                                        <source src={locationAudio} type="audio/mpeg" />
                                         <source src={locationAudio} type="audio/mp3" />
                                         Je browser ondersteunt dit geluidsfragment niet.
                                     </audio>
@@ -169,6 +170,7 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
                                     🔊 <span>Afspelen Geluidsfragment:</span>
                                 </p>
                                 <audio controls className="w-full rounded-lg h-10">
+                                    <source src={hint.mediaUrl} type="audio/mpeg" />
                                     <source src={hint.mediaUrl} type="audio/mp3" />
                                     Je browser ondersteunt dit geluidsfragment niet.
                                 </audio>
