@@ -14,6 +14,7 @@ interface HintCardProps {
 export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: HintCardProps) {
     // Tick every second so the submission window lock reacts immediately when it expires.
     const [now, setNow] = useState(() => Date.now());
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     useEffect(() => {
         const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -65,9 +66,14 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
         );
     }
 
+    // Determine media sources
+    const locationAudio = hint.locationMediaUrl || (hint.type === 'audio' ? hint.mediaUrl : undefined);
+    const mysteryGuestImage = hint.mysteryGuestMediaUrl || (hint.type === 'image' ? hint.mediaUrl : undefined);
+    const hasDualContent = Boolean(hint.contentLocation && hint.contentMysteryGuest);
+
     return (
         <div className="card bg-base-100 border border-primary/20 shadow-md hover:shadow-lg transition-all duration-200">
-            <div className="card-body p-5 space-y-3">
+            <div className="card-body p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <span className="badge badge-primary font-bold">Ronde #{hint.roundNumber}</span>
                     <span className="badge badge-accent font-semibold gap-1">
@@ -77,59 +83,107 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
 
                 <h3 className="card-title text-lg font-bold">Hint #{hint.roundNumber}</h3>
 
-                {/* Media Content */}
-                {hint.type === 'image' && hint.mediaUrl && (
-                    <div className="rounded-xl overflow-hidden border border-base-200 bg-black/5 aspect-video relative group">
-                        <img
-                            src={hint.mediaUrl}
-                            alt={hint.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">
-                            🔍 <span>Bekijk details in foto</span>
+                {/* Render Side-by-Side dual hint layout if both Location and Mystery Guest content/media exist */}
+                {hasDualContent ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Location Hint Card Column */}
+                        <div className="bg-primary/5 p-4 rounded-2xl border border-primary/15 flex flex-col justify-between space-y-3">
+                            <div className="space-y-2">
+                                <strong className="text-primary font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>📍</span> Locatie Hint
+                                </strong>
+                                {hint.contentLocation && (
+                                    <p className="text-sm text-base-content/90 font-medium whitespace-pre-line leading-relaxed">
+                                        {hint.contentLocation}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Location Audio Media */}
+                            {locationAudio && (
+                                <div className="bg-base-100/90 p-3 rounded-xl border border-primary/10 space-y-1.5 shadow-sm mt-2">
+                                    <p className="text-xs font-bold text-primary flex items-center gap-1.5">
+                                        🔊 <span>Beluister vogelgeluid (Locatie hint):</span>
+                                    </p>
+                                    <audio controls className="w-full rounded-lg h-9">
+                                        <source src={locationAudio} type="audio/mp3" />
+                                        Je browser ondersteunt dit geluidsfragment niet.
+                                    </audio>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Mystery Guest Hint Card Column */}
+                        <div className="bg-secondary/5 p-4 rounded-2xl border border-secondary/15 flex flex-col justify-between space-y-3">
+                            <div className="space-y-2">
+                                <strong className="text-secondary font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>🎭</span> Mystery Guest Hint
+                                </strong>
+                                {hint.contentMysteryGuest && (
+                                    <p className="text-sm text-base-content/90 font-medium whitespace-pre-line leading-relaxed">
+                                        {hint.contentMysteryGuest}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Mystery Guest Image Media */}
+                            {mysteryGuestImage && (
+                                <div
+                                    onClick={() => setPreviewImage(mysteryGuestImage)}
+                                    className="rounded-xl overflow-hidden border border-secondary/15 aspect-video relative group bg-black/5 cursor-pointer shadow-sm mt-2"
+                                >
+                                    <img
+                                        src={mysteryGuestImage}
+                                        alt="Babyfoto Mystery Guest"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">
+                                        👶 <span>Klik voor vergroting</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                )}
-
-                {hint.type === 'audio' && hint.mediaUrl && (
-                    <div className="bg-base-200/70 p-4 rounded-xl border border-base-300">
-                        <p className="text-xs font-semibold text-base-content/70 mb-2 flex items-center gap-1.5">
-                            🔊 <span>Afspelen Stemvervorming Fragment:</span>
-                        </p>
-                        <audio controls className="w-full rounded-lg h-10">
-                            <source src={hint.mediaUrl} type="audio/mp3" />
-                            Je browser ondersteunt dit geluidsfragment niet.
-                        </audio>
-                    </div>
-                )}
-
-                {/* Text Content */}
-                <div className="space-y-2 text-sm text-base-content/80">
-                    {hint.contentLocation && hint.contentMysteryGuest ? (
-                        <>
-                            <div className="bg-primary/5 p-3 rounded-xl border border-primary/10">
-                                <strong className="text-primary font-semibold block text-xs uppercase tracking-wider mb-1">
-                                    📍 Locatie Hint:
-                                </strong>
-                                <p>{hint.contentLocation}</p>
+                ) : (
+                    /* Single hint layout fallback */
+                    <div className="space-y-3">
+                        {hint.type === 'image' && hint.mediaUrl && (
+                            <div
+                                onClick={() => setPreviewImage(hint.mediaUrl!)}
+                                className="rounded-xl overflow-hidden border border-base-200 bg-black/5 aspect-video relative group cursor-pointer"
+                            >
+                                <img
+                                    src={hint.mediaUrl}
+                                    alt={hint.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">
+                                    🔍 <span>Bekijk foto in volledig scherm</span>
+                                </div>
                             </div>
-                            <div className="bg-secondary/5 p-3 rounded-xl border border-secondary/10">
-                                <strong className="text-secondary font-semibold block text-xs uppercase tracking-wider mb-1">
-                                    🎭 Mystery Guest Hint:
-                                </strong>
-                                <p>{hint.contentMysteryGuest}</p>
+                        )}
+
+                        {hint.type === 'audio' && hint.mediaUrl && (
+                            <div className="bg-base-200/70 p-4 rounded-xl border border-base-300">
+                                <p className="text-xs font-semibold text-base-content/70 mb-2 flex items-center gap-1.5">
+                                    🔊 <span>Afspelen Geluidsfragment:</span>
+                                </p>
+                                <audio controls className="w-full rounded-lg h-10">
+                                    <source src={hint.mediaUrl} type="audio/mp3" />
+                                    Je browser ondersteunt dit geluidsfragment niet.
+                                </audio>
                             </div>
-                        </>
-                    ) : (
-                        (hint.contentLocation || hint.contentMysteryGuest) && (
+                        )}
+
+                        {(hint.contentLocation || hint.contentMysteryGuest) && (
                             <div className="bg-base-200/60 p-4 rounded-xl border border-base-300">
-                                <p className="whitespace-pre-line leading-relaxed italic">
+                                <p className="whitespace-pre-line leading-relaxed italic text-sm">
                                     {hint.contentLocation || hint.contentMysteryGuest}
                                 </p>
                             </div>
-                        )
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Submission Window Timer (hidden once this round's prediction is submitted) */}
                 {!userGuess && <SubmissionWindowTimer windowEndDate={hint.windowEndDate} />}
@@ -162,6 +216,28 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
                     </div>
                 )}
             </div>
+
+            {/* Lightbox / Fullscreen Image Modal */}
+            {previewImage && (
+                <dialog className="modal modal-open bg-black/80 backdrop-blur-md" onClick={() => setPreviewImage(null)}>
+                    <div
+                        className="modal-box max-w-3xl p-2 bg-transparent shadow-none relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setPreviewImage(null)}
+                            className="btn btn-circle btn-sm btn-ghost text-white absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/80"
+                        >
+                            ✕
+                        </button>
+                        <img
+                            src={previewImage}
+                            alt="Vergrote Hint Foto"
+                            className="w-full h-auto max-h-[85vh] object-contain rounded-2xl"
+                        />
+                    </div>
+                </dialog>
+            )}
         </div>
     );
 }

@@ -21,9 +21,9 @@ migrate(
             {
                 round_number: 2,
                 title: 'Hint #2',
-                type: 'audio',
-                content_location: 'De Mystery Guest vertelt in een stem-vervormd geluidsfragment over de bestemming.',
-                content_mystery_guest: 'Luister goed naar het stemgeluid en de manier van praten!',
+                type: 'combined',
+                content_location: 'Eentje voor de vogelaars onder ons!',
+                content_mystery_guest: 'Herken jij de MG op deze schattige babyfoto?!',
                 release_date: '2026-08-20 12:00:00',
                 window_end_date: '2026-08-27 23:59:59',
                 potential_points: 60,

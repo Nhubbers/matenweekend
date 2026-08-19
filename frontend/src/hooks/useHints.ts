@@ -20,6 +20,10 @@ interface HintRecord {
     content_mystery_guest?: string;
     media_url?: string;
     media_file?: string;
+    media_url_location?: string;
+    media_file_location?: string;
+    media_url_mystery_guest?: string;
+    media_file_mystery_guest?: string;
     potential_points?: number;
 }
 
@@ -27,6 +31,13 @@ function toHint(rec: HintRecord, now: Date): Hint {
     const releaseDate = rec.release_date || new Date().toISOString();
     // Prefer an uploaded file (resolved to a PocketBase file URL), else an external URL.
     const mediaUrl = rec.media_file ? pb.files.getUrl(rec, rec.media_file) : rec.media_url || undefined;
+    const locationMediaUrl = rec.media_file_location
+        ? pb.files.getUrl(rec, rec.media_file_location)
+        : rec.media_url_location || (rec.type === 'audio' ? mediaUrl : undefined);
+    const mysteryGuestMediaUrl = rec.media_file_mystery_guest
+        ? pb.files.getUrl(rec, rec.media_file_mystery_guest)
+        : rec.media_url_mystery_guest || (rec.type === 'image' ? mediaUrl : undefined);
+
     return {
         id: rec.id,
         roundNumber: rec.round_number ?? 0,
@@ -37,6 +48,8 @@ function toHint(rec: HintRecord, now: Date): Hint {
         contentLocation: rec.content_location || undefined,
         contentMysteryGuest: rec.content_mystery_guest || undefined,
         mediaUrl,
+        locationMediaUrl,
+        mysteryGuestMediaUrl,
         potentialPoints: rec.potential_points ?? 0,
         isUnlocked: new Date(releaseDate) <= now,
     };
@@ -210,10 +223,17 @@ export function useHints() {
         if (file) {
             // Upload a real file to the media_file field.
             formData.append('media_file', file);
-        } else if (hint.mediaUrl && hint.mediaUrl.startsWith('http') && !hint.mediaUrl.includes('/api/files/')) {
-            // External media URL (e.g. Unsplash/SoundHelix). Skip blob previews and
+        } else if (hint.mediaUrl && !hint.mediaUrl.includes('/api/files/')) {
+            // External media URL (e.g. Unsplash/SoundHelix/static path). Skip blob previews and
             // already-resolved PocketBase file URLs so existing uploads are preserved.
             formData.append('media_url', hint.mediaUrl);
+        }
+
+        if (hint.locationMediaUrl) {
+            formData.append('media_url_location', hint.locationMediaUrl);
+        }
+        if (hint.mysteryGuestMediaUrl) {
+            formData.append('media_url_mystery_guest', hint.mysteryGuestMediaUrl);
         }
 
         const existing = await pb

@@ -7,14 +7,16 @@ describe('Hints Feature Data & Logic', () => {
         expect(INITIAL_HINTS.length).toBe(5);
     });
 
-    it('should have Hint 1 as unlocked image clue and Hint 2 as audio clue', () => {
+    it('should have Hint 1 as unlocked image clue and Hint 2 as combined audio/image clue', () => {
         const hint1 = INITIAL_HINTS[0];
         const hint2 = INITIAL_HINTS[1];
 
         expect(hint1.type).toBe('image');
         expect(hint1.isUnlocked).toBe(true);
 
-        expect(hint2.type).toBe('audio');
+        expect(hint2.type).toBe('combined');
+        expect(hint2.contentLocation).toBeDefined();
+        expect(hint2.contentMysteryGuest).toBeDefined();
     });
 
     it('should have placeholders for hints 3 and 4', () => {

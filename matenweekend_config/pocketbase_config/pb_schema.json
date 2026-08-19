@@ -1364,6 +1364,26 @@
             },
             {
                 "hidden": false,
+                "id": "url_media_url_location",
+                "max": 2000,
+                "name": "media_url_location",
+                "presentable": false,
+                "required": false,
+                "system": false,
+                "type": "url"
+            },
+            {
+                "hidden": false,
+                "id": "url_media_url_mg",
+                "max": 2000,
+                "name": "media_url_mystery_guest",
+                "presentable": false,
+                "required": false,
+                "system": false,
+                "type": "url"
+            },
+            {
+                "hidden": false,
                 "id": "file_media_file",
                 "maxSelect": 1,
                 "maxSize": 15728640,
@@ -1380,6 +1400,56 @@
                     "audio/m4a"
                 ],
                 "name": "media_file",
+                "presentable": false,
+                "protected": false,
+                "required": false,
+                "system": false,
+                "thumbs": null,
+                "type": "file"
+            },
+            {
+                "hidden": false,
+                "id": "file_media_file_loc",
+                "maxSelect": 1,
+                "maxSize": 15728640,
+                "mimeTypes": [
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp",
+                    "image/gif",
+                    "image/heic",
+                    "audio/mpeg",
+                    "audio/mp3",
+                    "audio/wav",
+                    "audio/ogg",
+                    "audio/m4a"
+                ],
+                "name": "media_file_location",
+                "presentable": false,
+                "protected": false,
+                "required": false,
+                "system": false,
+                "thumbs": null,
+                "type": "file"
+            },
+            {
+                "hidden": false,
+                "id": "file_media_file_mg",
+                "maxSelect": 1,
+                "maxSize": 15728640,
+                "mimeTypes": [
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp",
+                    "image/gif",
+                    "image/heic",
+                    "audio/mpeg",
+                    "audio/mp3",
+                    "audio/wav",
+                    "audio/ogg",
+                    "audio/m4a"
+                ],
+                "name": "media_file_mystery_guest",
                 "presentable": false,
                 "protected": false,
                 "required": false,

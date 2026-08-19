@@ -557,19 +557,53 @@ export function AdminHintsManager() {
                                 />
                             </div>
 
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text font-semibold text-xs">
+                                        📍 Locatie Media URL (Audio / Afbeelding)
+                                    </span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={selectedHint.locationMediaUrl || ''}
+                                    onChange={(e) =>
+                                        setSelectedHint({ ...selectedHint, locationMediaUrl: e.target.value })
+                                    }
+                                    className="input input-bordered input-sm rounded-xl"
+                                    placeholder="/hints/hint2-location-audio.mp3"
+                                />
+                            </div>
+
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text font-semibold text-xs">
+                                        🎭 Mystery Guest Media URL (Audio / Afbeelding)
+                                    </span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={selectedHint.mysteryGuestMediaUrl || ''}
+                                    onChange={(e) =>
+                                        setSelectedHint({ ...selectedHint, mysteryGuestMediaUrl: e.target.value })
+                                    }
+                                    className="input input-bordered input-sm rounded-xl"
+                                    placeholder="/hints/hint2-mg-picture.png"
+                                />
+                            </div>
+
                             {selectedHint.type !== 'text' && (
                                 <div className="form-control">
                                     <label className="label">
                                         <span className="label-text font-semibold text-xs">
-                                            Media URL (Afbeelding of Audio URL)
+                                            Algemene Media URL (Fallback)
                                         </span>
                                     </label>
                                     <input
-                                        type="url"
+                                        type="text"
                                         value={selectedHint.mediaUrl || ''}
                                         onChange={(e) => setSelectedHint({ ...selectedHint, mediaUrl: e.target.value })}
                                         className="input input-bordered input-sm rounded-xl"
-                                        placeholder="https://..."
+                                        placeholder="/hints/..."
                                     />
                                 </div>
                             )}

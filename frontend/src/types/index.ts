@@ -136,6 +136,8 @@ export interface Hint {
     contentLocation?: string;
     contentMysteryGuest?: string;
     mediaUrl?: string;
+    locationMediaUrl?: string;
+    mysteryGuestMediaUrl?: string;
     potentialPoints: number;
     isUnlocked: boolean;
 }
