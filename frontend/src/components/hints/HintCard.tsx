@@ -11,6 +11,34 @@ interface HintCardProps {
     userGuess?: UserGuess | null;
 }
 
+function isAudioUrl(url?: string): boolean {
+    if (!url) return false;
+    const clean = url.split('?')[0].toLowerCase();
+    return (
+        clean.endsWith('.mp3') ||
+        clean.endsWith('.wav') ||
+        clean.endsWith('.ogg') ||
+        clean.endsWith('.m4a') ||
+        clean.includes('audio')
+    );
+}
+
+function isImageUrl(url?: string): boolean {
+    if (!url) return false;
+    const clean = url.split('?')[0].toLowerCase();
+    return (
+        clean.endsWith('.png') ||
+        clean.endsWith('.jpg') ||
+        clean.endsWith('.jpeg') ||
+        clean.endsWith('.webp') ||
+        clean.endsWith('.gif') ||
+        clean.endsWith('.heic') ||
+        clean.includes('image') ||
+        clean.includes('picture') ||
+        clean.includes('photo')
+    );
+}
+
 export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: HintCardProps) {
     // Tick every second so the submission window lock reacts immediately when it expires.
     const [now, setNow] = useState(() => Date.now());
@@ -66,9 +94,17 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
         );
     }
 
-    // Determine media sources
-    const locationAudio = hint.locationMediaUrl || (hint.type === 'audio' ? hint.mediaUrl : undefined);
-    const mysteryGuestImage = hint.mysteryGuestMediaUrl || (hint.type === 'image' ? hint.mediaUrl : undefined);
+    // Determine media sources smartly
+    const locationAudio =
+        hint.locationMediaUrl ||
+        (isAudioUrl(hint.mediaUrl) ? hint.mediaUrl : undefined) ||
+        (hint.type === 'audio' ? hint.mediaUrl : undefined);
+
+    const mysteryGuestImage =
+        hint.mysteryGuestMediaUrl ||
+        (isImageUrl(hint.mediaUrl) ? hint.mediaUrl : undefined) ||
+        (hint.type === 'image' ? hint.mediaUrl : undefined);
+
     const hasDualContent = Boolean(hint.contentLocation && hint.contentMysteryGuest);
 
     return (

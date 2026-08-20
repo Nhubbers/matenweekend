@@ -27,16 +27,50 @@ interface HintRecord {
     potential_points?: number;
 }
 
+function isAudioFileUrl(url?: string): boolean {
+    if (!url) return false;
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    return Boolean(
+        cleanUrl.endsWith('.mp3') ||
+        cleanUrl.endsWith('.wav') ||
+        cleanUrl.endsWith('.ogg') ||
+        cleanUrl.endsWith('.m4a') ||
+        cleanUrl.includes('audio')
+    );
+}
+
+function isImageFileUrl(url?: string): boolean {
+    if (!url) return false;
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    return Boolean(
+        cleanUrl.endsWith('.png') ||
+        cleanUrl.endsWith('.jpg') ||
+        cleanUrl.endsWith('.jpeg') ||
+        cleanUrl.endsWith('.webp') ||
+        cleanUrl.endsWith('.gif') ||
+        cleanUrl.endsWith('.heic') ||
+        cleanUrl.includes('image') ||
+        cleanUrl.includes('picture') ||
+        cleanUrl.includes('photo')
+    );
+}
+
 function toHint(rec: HintRecord, now: Date): Hint {
     const releaseDate = rec.release_date || new Date().toISOString();
     // Prefer an uploaded file (resolved to a PocketBase file URL), else an external URL.
     const mediaUrl = rec.media_file ? pb.files.getUrl(rec, rec.media_file) : rec.media_url || undefined;
+
     const locationMediaUrl = rec.media_file_location
         ? pb.files.getUrl(rec, rec.media_file_location)
-        : rec.media_url_location || (rec.type === 'audio' ? mediaUrl : undefined);
+        : rec.media_url_location ||
+          (rec.type === 'audio' ? mediaUrl : undefined) ||
+          (isAudioFileUrl(mediaUrl) ? mediaUrl : undefined);
+
     const mysteryGuestMediaUrl = rec.media_file_mystery_guest
         ? pb.files.getUrl(rec, rec.media_file_mystery_guest)
-        : rec.media_url_mystery_guest || (rec.type === 'image' ? mediaUrl : undefined);
+        : rec.media_url_mystery_guest ||
+          (rec.type === 'image' ? mediaUrl : undefined) ||
+          (isImageFileUrl(mediaUrl) ? mediaUrl : undefined);
 
     return {
         id: rec.id,
