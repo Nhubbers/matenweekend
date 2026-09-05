@@ -124,7 +124,10 @@ export interface CreateActivityData {
 }
 
 // Hints & Guesses feature types
+import type { MediaKind } from '@/lib/hintMedia';
+
 export type HintType = 'image' | 'audio' | 'text' | 'combined';
+export type { MediaKind } from '@/lib/hintMedia';
 
 export interface Hint {
     id: string;
@@ -138,6 +141,11 @@ export interface Hint {
     mediaUrl?: string;
     locationMediaUrl?: string;
     mysteryGuestMediaUrl?: string;
+    // Detected media kind for the split location/mystery-guest media. Optional so
+    // existing mock/seed hints keep working; populated from the resolved URL (or
+    // from the selected File's MIME type during the admin live preview).
+    locationMediaKind?: MediaKind;
+    mysteryGuestMediaKind?: MediaKind;
     potentialPoints: number;
     isUnlocked: boolean;
 }

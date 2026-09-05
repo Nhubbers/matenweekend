@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
+import { detectMediaKind } from '@/lib/hintMedia';
 import type { Hint, RoundAnswer, Submission, User, UserGuess } from '@/types';
 
 /* -------------------------------------------------------------------------- */
@@ -27,50 +28,23 @@ interface HintRecord {
     potential_points?: number;
 }
 
-function isAudioFileUrl(url?: string): boolean {
-    if (!url) return false;
-    const cleanUrl = url.split('?')[0].toLowerCase();
-    return Boolean(
-        cleanUrl.endsWith('.mp3') ||
-        cleanUrl.endsWith('.wav') ||
-        cleanUrl.endsWith('.ogg') ||
-        cleanUrl.endsWith('.m4a') ||
-        cleanUrl.includes('audio')
-    );
-}
-
-function isImageFileUrl(url?: string): boolean {
-    if (!url) return false;
-    const cleanUrl = url.split('?')[0].toLowerCase();
-    return Boolean(
-        cleanUrl.endsWith('.png') ||
-        cleanUrl.endsWith('.jpg') ||
-        cleanUrl.endsWith('.jpeg') ||
-        cleanUrl.endsWith('.webp') ||
-        cleanUrl.endsWith('.gif') ||
-        cleanUrl.endsWith('.heic') ||
-        cleanUrl.includes('image') ||
-        cleanUrl.includes('picture') ||
-        cleanUrl.includes('photo')
-    );
-}
-
 function toHint(rec: HintRecord, now: Date): Hint {
     const releaseDate = rec.release_date || new Date().toISOString();
     // Prefer an uploaded file (resolved to a PocketBase file URL), else an external URL.
     const mediaUrl = rec.media_file ? pb.files.getUrl(rec, rec.media_file) : rec.media_url || undefined;
 
+    // Split location / mystery-guest media. Each one can be either an image or an
+    // audio clip (e.g. an image for the location + audio for the mystery guest, or
+    // vice versa), so we detect the kind from the resolved URL rather than assuming
+    // a fixed role. When a dedicated URL is missing we fall back to the generic
+    // mediaUrl (of any kind).
     const locationMediaUrl = rec.media_file_location
         ? pb.files.getUrl(rec, rec.media_file_location)
-        : rec.media_url_location ||
-          (rec.type === 'audio' ? mediaUrl : undefined) ||
-          (isAudioFileUrl(mediaUrl) ? mediaUrl : undefined);
+        : rec.media_url_location || mediaUrl;
 
     const mysteryGuestMediaUrl = rec.media_file_mystery_guest
         ? pb.files.getUrl(rec, rec.media_file_mystery_guest)
-        : rec.media_url_mystery_guest ||
-          (rec.type === 'image' ? mediaUrl : undefined) ||
-          (isImageFileUrl(mediaUrl) ? mediaUrl : undefined);
+        : rec.media_url_mystery_guest || mediaUrl;
 
     return {
         id: rec.id,
@@ -84,6 +58,8 @@ function toHint(rec: HintRecord, now: Date): Hint {
         mediaUrl,
         locationMediaUrl,
         mysteryGuestMediaUrl,
+        locationMediaKind: detectMediaKind(locationMediaUrl),
+        mysteryGuestMediaKind: detectMediaKind(mysteryGuestMediaUrl),
         potentialPoints: rec.potential_points ?? 0,
         isUnlocked: new Date(releaseDate) <= now,
     };

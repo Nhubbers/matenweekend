@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_HINTS, EUROPEAN_COUNTRIES } from '../data/mockHints';
 import { calculatePayout, COMBO_BONUS } from '../lib/guessPayout';
+import { detectMediaKind, detectFileMediaKind } from '../lib/hintMedia';
 
 describe('Hints Feature Data & Logic', () => {
     it('should contain 5 scheduled hints', () => {
@@ -62,5 +63,44 @@ describe('Guess Payout Calculation', () => {
         expect(calculatePayout(10, 20, true, true, false)).toBe(10 + 20 * 3);
         // one correct -> no base, only the wagered points scaled
         expect(calculatePayout(10, 10, true, false, false)).toBe(10 * 1.5);
+    });
+});
+
+describe('Hint media kind detection', () => {
+    it('classifies audio URLs (including query strings) as audio', () => {
+        expect(detectMediaKind('https://cdn.example/clip.mp3')).toBe('audio');
+        expect(detectMediaKind('https://cdn.example/voix.wav?token=abc')).toBe('audio');
+        expect(detectMediaKind('https://cdn.example/audio/teaser')).toBe('audio');
+    });
+
+    it('classifies both classic image extensions and CDN-style image URLs as images', () => {
+        expect(detectMediaKind('https://cdn.example/photo.jpg')).toBe('image');
+        expect(detectMediaKind('https://cdn.example/pic/round3.png')).toBe('image');
+        expect(detectMediaKind('https://images.unsplash.com/photo-1488646953014?auto=format')).toBe('image');
+    });
+
+    it('correctly handles either role holding either media kind', () => {
+        // audio for the location, image for the mystery guest
+        expect(detectMediaKind('https://cdn.example/location-birdsong.mp3')).toBe('audio');
+        expect(detectMediaKind('https://cdn.example/mystery-guest-baby.png')).toBe('image');
+        // image for the location, audio for the mystery guest (the reverse)
+        expect(detectMediaKind('https://cdn.example/location-photo.webp')).toBe('image');
+        expect(detectMediaKind('https://cdn.example/mystery-guest-voice.mp3')).toBe('audio');
+    });
+
+    it('returns none for empty, unknown or query-only values', () => {
+        expect(detectMediaKind(undefined)).toBe('none');
+        expect(detectMediaKind('')).toBe('none');
+        expect(detectMediaKind('https://cdn.example/file.xyz')).toBe('none');
+    });
+
+    it('maps browser File MIME types for the live preview blob URLs', () => {
+        const audioFile = new File([''], 'clip.mp3', { type: 'audio/mpeg' });
+        const imageFile = new File([''], 'photo.png', { type: 'image/png' });
+        const fallbackFile = new File([''], 'voice.wav', { type: '' });
+        expect(detectFileMediaKind(audioFile)).toBe('audio');
+        expect(detectFileMediaKind(imageFile)).toBe('image');
+        expect(detectFileMediaKind(fallbackFile)).toBe('audio'); // from file name
+        expect(detectFileMediaKind(null)).toBe('none');
     });
 });

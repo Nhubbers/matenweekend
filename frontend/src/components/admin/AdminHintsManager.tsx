@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { useToast } from '@/contexts/ToastContext';
 import { ConfirmDialog } from '@/components/common';
 import { HintCard } from '@/components/hints/HintCard';
+import { detectFileMediaKind } from '@/lib/hintMedia';
 import type { Hint, Submission } from '@/types';
 
 export function AdminHintsManager() {
@@ -107,7 +108,11 @@ export function AdminHintsManager() {
         const file = e.target.files?.[0];
         if (file && selectedHint) {
             setSelectedLocationFile(file);
-            setSelectedHint({ ...selectedHint, locationMediaUrl: URL.createObjectURL(file) });
+            setSelectedHint({
+                ...selectedHint,
+                locationMediaUrl: URL.createObjectURL(file),
+                locationMediaKind: detectFileMediaKind(file),
+            });
         }
     };
 
@@ -115,7 +120,11 @@ export function AdminHintsManager() {
         const file = e.target.files?.[0];
         if (file && selectedHint) {
             setSelectedMysteryGuestFile(file);
-            setSelectedHint({ ...selectedHint, mysteryGuestMediaUrl: URL.createObjectURL(file) });
+            setSelectedHint({
+                ...selectedHint,
+                mysteryGuestMediaUrl: URL.createObjectURL(file),
+                mysteryGuestMediaKind: detectFileMediaKind(file),
+            });
         }
     };
 
@@ -574,7 +583,7 @@ export function AdminHintsManager() {
                                 <div className="form-control bg-primary/5 p-3.5 rounded-2xl border border-primary/15 space-y-2">
                                     <label className="label p-0">
                                         <span className="label-text font-bold text-xs flex items-center gap-1.5 text-primary">
-                                            📍 Upload Locatie Bestand (bijv. Vogelgeluid Audio MP3)
+                                            📍 Upload Locatie Bestand (audio of afbeelding)
                                         </span>
                                     </label>
                                     <input
@@ -598,7 +607,7 @@ export function AdminHintsManager() {
                                 <div className="form-control bg-secondary/5 p-3.5 rounded-2xl border border-secondary/15 space-y-2">
                                     <label className="label p-0">
                                         <span className="label-text font-bold text-xs flex items-center gap-1.5 text-secondary">
-                                            🎭 Upload Mystery Guest Bestand (bijv. Babyfoto PNG)
+                                            🎭 Upload Mystery Guest Bestand (audio of afbeelding)
                                         </span>
                                     </label>
                                     <input

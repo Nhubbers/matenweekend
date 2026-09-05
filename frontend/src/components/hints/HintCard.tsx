@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { Hint, UserGuess } from '@/types';
+import type { Hint, UserGuess, MediaKind } from '@/types';
 import { nl } from '@/lib/translations';
+import { detectMediaKind } from '@/lib/hintMedia';
 import { CountdownTimer } from './CountdownTimer';
 import { SubmissionWindowTimer } from './SubmissionWindowTimer';
 
@@ -11,31 +12,68 @@ interface HintCardProps {
     userGuess?: UserGuess | null;
 }
 
-function isAudioUrl(url?: string): boolean {
-    if (!url) return false;
-    const clean = url.split('?')[0].toLowerCase();
-    return (
-        clean.endsWith('.mp3') ||
-        clean.endsWith('.wav') ||
-        clean.endsWith('.ogg') ||
-        clean.endsWith('.m4a') ||
-        clean.includes('audio')
-    );
-}
+/** Renders a single hint media element as an image thumbnail (click-to-enlarge),
+ *  an audio player, or a video player depending on the detected media kind. */
+function HintMediaBlock({
+    url,
+    kind,
+    borderClass,
+    emoji,
+    audioLabel,
+    imageLabel,
+    onOpenPreview,
+}: {
+    url?: string;
+    kind: MediaKind;
+    borderClass: string;
+    emoji: string;
+    audioLabel: string;
+    imageLabel: string;
+    onOpenPreview: (url: string) => void;
+}) {
+    if (!url || kind === 'none') return null;
 
-function isImageUrl(url?: string): boolean {
-    if (!url) return false;
-    const clean = url.split('?')[0].toLowerCase();
+    if (kind === 'image') {
+        return (
+            <div
+                onClick={() => onOpenPreview(url)}
+                className={`rounded-xl overflow-hidden border ${borderClass} aspect-video relative group bg-black/5 cursor-pointer shadow-sm mt-2`}
+            >
+                <img
+                    src={url}
+                    alt={imageLabel}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">
+                    🔍 <span>Klik voor vergroting</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (kind === 'video') {
+        return (
+            <div className={`rounded-xl overflow-hidden border ${borderClass} bg-black/5 shadow-sm mt-2`}>
+                <video controls className="w-full aspect-video object-cover bg-black">
+                    <source src={url} />
+                    Je browser ondersteunt dit videofragment niet.
+                </video>
+            </div>
+        );
+    }
+
+    // audio
     return (
-        clean.endsWith('.png') ||
-        clean.endsWith('.jpg') ||
-        clean.endsWith('.jpeg') ||
-        clean.endsWith('.webp') ||
-        clean.endsWith('.gif') ||
-        clean.endsWith('.heic') ||
-        clean.includes('image') ||
-        clean.includes('picture') ||
-        clean.includes('photo')
+        <div className={`bg-base-100/90 p-3 rounded-xl border ${borderClass} space-y-1.5 shadow-sm mt-2`}>
+            <p className="text-xs font-bold flex items-center gap-1.5">
+                {emoji} <span>{audioLabel}</span>
+            </p>
+            <audio controls className="w-full rounded-lg h-9">
+                <source src={url} type="audio/mpeg" />
+                <source src={url} type="audio/mp3" />
+                Je browser ondersteunt dit geluidsfragment niet.
+            </audio>
+        </div>
     );
 }
 
@@ -94,18 +132,21 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
         );
     }
 
-    // Determine media sources smartly
-    const locationAudio =
-        hint.locationMediaUrl ||
-        (isAudioUrl(hint.mediaUrl) ? hint.mediaUrl : undefined) ||
-        (hint.type === 'audio' ? hint.mediaUrl : undefined);
+    // Resolve one media URL per split column. Each can be an image or an audio
+    // clip (e.g. an image for the location + audio for the mystery guest, or vice
+    // versa). We trust the kind recorded at load/save time, and only fall back to
+    // URL detection when it hasn't been captured (e.g. mock hints).
+    const locationMedia = hint.locationMediaUrl;
+    const mysteryGuestMedia = hint.mysteryGuestMediaUrl;
+    const locationKind = hint.locationMediaKind ?? detectMediaKind(locationMedia);
+    const mysteryGuestKind = hint.mysteryGuestMediaKind ?? detectMediaKind(mysteryGuestMedia);
 
-    const mysteryGuestImage =
-        hint.mysteryGuestMediaUrl ||
-        (isImageUrl(hint.mediaUrl) ? hint.mediaUrl : undefined) ||
-        (hint.type === 'image' ? hint.mediaUrl : undefined);
-
-    const hasDualContent = Boolean(hint.contentLocation && hint.contentMysteryGuest);
+    // Show the split layout whenever both media columns have content (or both
+    // texts are present), so image-for-location + audio-for-guest hints render
+    // side by side as well.
+    const hasDualContent = Boolean(
+        (hint.contentLocation && hint.contentMysteryGuest) || (locationMedia && mysteryGuestMedia)
+    );
 
     return (
         <div className="card bg-base-100 border border-primary/20 shadow-md hover:shadow-lg transition-all duration-200">
@@ -135,19 +176,16 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
                                 )}
                             </div>
 
-                            {/* Location Audio Media */}
-                            {locationAudio && (
-                                <div className="bg-base-100/90 p-3 rounded-xl border border-primary/10 space-y-1.5 shadow-sm mt-2">
-                                    <p className="text-xs font-bold text-primary flex items-center gap-1.5">
-                                        🔊 <span>Beluister vogelgeluid (Locatie hint):</span>
-                                    </p>
-                                    <audio controls className="w-full rounded-lg h-9">
-                                        <source src={locationAudio} type="audio/mpeg" />
-                                        <source src={locationAudio} type="audio/mp3" />
-                                        Je browser ondersteunt dit geluidsfragment niet.
-                                    </audio>
-                                </div>
-                            )}
+                            {/* Location media (image or audio) */}
+                            <HintMediaBlock
+                                url={locationMedia}
+                                kind={locationKind}
+                                borderClass="border-primary/10"
+                                emoji="🔊"
+                                audioLabel="Beluister geluidsfragment (Locatie hint)"
+                                imageLabel="Locatie Hint Foto"
+                                onOpenPreview={setPreviewImage}
+                            />
                         </div>
 
                         {/* Mystery Guest Hint Card Column */}
@@ -163,55 +201,30 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
                                 )}
                             </div>
 
-                            {/* Mystery Guest Image Media */}
-                            {mysteryGuestImage && (
-                                <div
-                                    onClick={() => setPreviewImage(mysteryGuestImage)}
-                                    className="rounded-xl overflow-hidden border border-secondary/15 aspect-video relative group bg-black/5 cursor-pointer shadow-sm mt-2"
-                                >
-                                    <img
-                                        src={mysteryGuestImage}
-                                        alt="Babyfoto Mystery Guest"
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">
-                                        👶 <span>Klik voor vergroting</span>
-                                    </div>
-                                </div>
-                            )}
+                            {/* Mystery guest media (image or audio) */}
+                            <HintMediaBlock
+                                url={mysteryGuestMedia}
+                                kind={mysteryGuestKind}
+                                borderClass="border-secondary/15"
+                                emoji="🔊"
+                                audioLabel="Beluister geluidsfragment (Mystery Guest hint)"
+                                imageLabel="Mystery Guest Foto"
+                                onOpenPreview={setPreviewImage}
+                            />
                         </div>
                     </div>
                 ) : (
                     /* Single hint layout fallback */
                     <div className="space-y-3">
-                        {hint.type === 'image' && hint.mediaUrl && (
-                            <div
-                                onClick={() => setPreviewImage(hint.mediaUrl!)}
-                                className="rounded-xl overflow-hidden border border-base-200 bg-black/5 aspect-video relative group cursor-pointer"
-                            >
-                                <img
-                                    src={hint.mediaUrl}
-                                    alt={hint.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                                <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">
-                                    🔍 <span>Bekijk foto in volledig scherm</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {hint.type === 'audio' && hint.mediaUrl && (
-                            <div className="bg-base-200/70 p-4 rounded-xl border border-base-300">
-                                <p className="text-xs font-semibold text-base-content/70 mb-2 flex items-center gap-1.5">
-                                    🔊 <span>Afspelen Geluidsfragment:</span>
-                                </p>
-                                <audio controls className="w-full rounded-lg h-10">
-                                    <source src={hint.mediaUrl} type="audio/mpeg" />
-                                    <source src={hint.mediaUrl} type="audio/mp3" />
-                                    Je browser ondersteunt dit geluidsfragment niet.
-                                </audio>
-                            </div>
-                        )}
+                        <HintMediaBlock
+                            url={hint.mediaUrl}
+                            kind={detectMediaKind(hint.mediaUrl)}
+                            borderClass="border-base-200"
+                            emoji="🔊"
+                            audioLabel="Afspelen Geluidsfragment:"
+                            imageLabel={hint.title}
+                            onOpenPreview={setPreviewImage}
+                        />
 
                         {(hint.contentLocation || hint.contentMysteryGuest) && (
                             <div className="bg-base-200/60 p-4 rounded-xl border border-base-300">
@@ -222,7 +235,6 @@ export function HintCard({ hint, isNextToUnlock, onOpenGuessModal, userGuess }: 
                         )}
                     </div>
                 )}
-
                 {/* Submission Window Timer (hidden once this round's prediction is submitted) */}
                 {!userGuess && <SubmissionWindowTimer windowEndDate={hint.windowEndDate} />}
 
