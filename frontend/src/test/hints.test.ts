@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_HINTS, EUROPEAN_COUNTRIES } from '../data/mockHints';
-import { calculatePayout, COMBO_BONUS } from '../lib/guessPayout';
+import { calculatePayout, COMBO_BONUS, clampWagerToAvailable, maxAllowedWager } from '../lib/guessPayout';
 import { detectMediaKind, detectFileMediaKind } from '../lib/hintMedia';
 
 describe('Hints Feature Data & Logic', () => {
@@ -102,5 +102,27 @@ describe('Hint media kind detection', () => {
         expect(detectFileMediaKind(imageFile)).toBe('image');
         expect(detectFileMediaKind(fallbackFile)).toBe('audio'); // from file name
         expect(detectFileMediaKind(null)).toBe('none');
+    });
+});
+
+describe('Wager vs saldo (fool-proof invariant)', () => {
+    it('never allows a wager above the available saldo', () => {
+        expect(clampWagerToAvailable(50, 30)).toBe(30);
+        expect(clampWagerToAvailable(100, 30)).toBe(30);
+        expect(clampWagerToAvailable(30, 30)).toBe(30);
+    });
+
+    it('clamps to 0 when the user has no available saldo, or for negative/NaN input', () => {
+        expect(maxAllowedWager(0)).toBe(0);
+        expect(maxAllowedWager(-5)).toBe(0);
+        expect(maxAllowedWager(Number.NaN)).toBe(0);
+        expect(clampWagerToAvailable(50, 0)).toBe(0);
+        expect(clampWagerToAvailable(NaN, 30)).toBe(0);
+        expect(clampWagerToAvailable(-10, 30)).toBe(0);
+    });
+
+    it('rounds available balance down so a fractional saldo cannot be over-wagered', () => {
+        expect(maxAllowedWager(23.7)).toBe(23);
+        expect(clampWagerToAvailable(99, 23.7)).toBe(23);
     });
 });

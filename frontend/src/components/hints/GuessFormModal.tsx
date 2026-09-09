@@ -3,7 +3,7 @@ import { EUROPEAN_COUNTRIES } from '@/data/mockHints';
 import { nl } from '@/lib/translations';
 import { useToast } from '@/contexts/ToastContext';
 import { ConfirmDialog } from '@/components/common';
-import { calculatePayout } from '@/lib/guessPayout';
+import { calculatePayout, clampWagerToAvailable, maxAllowedWager } from '@/lib/guessPayout';
 import { getErrorMessage } from '@/lib/errors';
 import type { UserGuess } from '@/types';
 
@@ -53,8 +53,10 @@ export function GuessFormModal({
     if (!isOpen) return null;
 
     // Live potential payout based on the current wager (multiplier applies only to wagered points).
-    const maxWager = Math.max(0, Math.floor(userPoints));
-    const effectiveWager = Math.min(Math.max(0, Math.floor(Number(wagerPoints) || 0)), maxWager);
+    const maxWager = maxAllowedWager(userPoints);
+    const effectiveWager = clampWagerToAvailable(wagerPoints, maxWager);
+    // A user with no free saldo cannot wager anything at all, so block submission entirely.
+    const cannotWager = maxWager <= 0;
     const potentialOneCorrect = calculatePayout(basePoints, effectiveWager, true, false, isFinalRound);
     const potentialBothCorrect = calculatePayout(basePoints, effectiveWager, true, true, isFinalRound);
 
@@ -173,6 +175,11 @@ export function GuessFormModal({
                                 {Math.min(wagerPoints, Math.max(userPoints, 0))} pts
                             </div>
                         </div>
+                        {cannotWager && (
+                            <div className="alert alert-warning rounded-xl p-2 text-xs mt-2">
+                                🚫 Je hebt geen beschikbaar saldo om in te zetten.
+                            </div>
+                        )}
 
                         {/* Multiplier info (collapsible) + compact potential payout */}
                         <div className="mt-3 space-y-2">
@@ -224,7 +231,7 @@ export function GuessFormModal({
                         <button
                             type="submit"
                             className="btn btn-primary rounded-xl px-6 font-bold shadow-md"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || cannotWager}
                         >
                             {isSubmitting ? '🔄 Opslaan...' : currentGuess ? nl.updateGuess : nl.submitGuess}
                         </button>

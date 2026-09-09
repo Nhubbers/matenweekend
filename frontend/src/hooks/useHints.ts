@@ -110,6 +110,38 @@ function toSubmission(rec: GuessRecord): Submission {
 /*  Hooks                                                                      */
 /* -------------------------------------------------------------------------- */
 
+interface PointTransactionRecord {
+    id: string;
+    amount?: number;
+}
+
+/**
+ * Computes the authorized available balance a user may wager:
+ *   available = settled point_transactions total - sum(unresolved pending wagers)
+ *
+ * Mirrors the PocketBase hooks exactly. `excludeGuessId` (used when editing an
+ * existing guess) removes that guess's own pending wager from the pending sum, so
+ * a user can keep/re-wager up to what their other rounds leave free.
+ */
+async function getAvailableBalance(userId: string, excludeGuessId?: string): Promise<number> {
+    const [txs, pendingGuesses] = await Promise.all([
+        pb.collection('point_transactions').getFullList<PointTransactionRecord>({
+            filter: `user = "${userId}"`,
+        }),
+        pb.collection('guesses').getFullList<GuessRecord>({
+            filter: `user = "${userId}" && resolved != true`,
+        }),
+    ]);
+
+    const total = txs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const pendingWagers = pendingGuesses.reduce((sum, g) => {
+        if (g.id === excludeGuessId) return sum;
+        return sum + (g.wager_points || 0);
+    }, 0);
+
+    return Math.max(0, total - pendingWagers);
+}
+
 export function useHints() {
     const queryClient = useQueryClient();
     const userId = pb.authStore.record?.id;
@@ -192,19 +224,36 @@ export function useHints() {
             throw new Error('Je moet ingelogd zijn om een voorspelling op te slaan.');
         }
 
+        // Authoritative client-side guard: a wager may NEVER exceed the user's
+        // available saldo (settled points minus already-pending unresolved wagers).
+        // This mirrors the PocketBase onRecordCreate/onRecordUpdate guard exactly,
+        // so a stale UI value or any caller can never over-wager.
+        const existing = await pb.collection('guesses').getFullList<GuessRecord>({
+            filter: `user = "${userId}" && round_number = ${activeRoundNumber}`,
+            limit: 1,
+        });
+        const existingGuessId = existing[0]?.id;
+
+        const requestedWager = Math.floor(Number(guessData.wagerPoints) || 0);
+        if (!Number.isFinite(requestedWager) || requestedWager < 0) {
+            throw new Error('Inzet mag niet negatief zijn.');
+        }
+
+        const available = await getAvailableBalance(userId, existingGuessId);
+        if (requestedWager > available) {
+            throw new Error(`Je kunt niet meer inzetten dan je saldo. Beschikbaar: ${Math.max(0, available)} pts.`);
+        }
+        const safeWager = Math.min(requestedWager, available);
+
         const payload = {
             user: userId,
             round_number: activeRoundNumber,
             location_country: guessData.locationCountry,
             mystery_guest_name: guessData.mysteryGuestName,
-            wager_points: guessData.wagerPoints,
+            wager_points: safeWager,
             submitted_at: new Date().toISOString(),
         };
 
-        const existing = await pb.collection('guesses').getFullList<GuessRecord>({
-            filter: `user = "${userId}" && round_number = ${activeRoundNumber}`,
-            limit: 1,
-        });
         if (existing.length) {
             await pb.collection('guesses').update(existing[0].id, payload);
         } else {
