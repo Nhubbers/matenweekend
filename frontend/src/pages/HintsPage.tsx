@@ -5,6 +5,7 @@ import { GuessFormModal } from '@/components/hints/GuessFormModal';
 import { useHints } from '@/hooks/useHints';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserTransactions } from '@/hooks/useRanking';
+import { maxAllowedWager } from '@/lib/guessPayout';
 import { nl } from '@/lib/translations';
 
 export function HintsPage() {
@@ -21,7 +22,10 @@ export function HintsPage() {
 
     // Available balance for a new wager = settled points minus points already locked
     // in unresolved wagers. This prevents wagering the same points twice (double spending).
-    const availablePoints = Math.max(0, userPointsBalance - pendingWagerPoints);
+    // `maxAllowedWager` floors it and guards against a non-finite balance, so the wager
+    // sent to PocketBase is always a valid integer (0 is allowed - see the
+    // `guesses.wager_points` schema note).
+    const availablePoints = maxAllowedWager(userPointsBalance - pendingWagerPoints);
 
     // Map each round number to the user's prediction for that round.
     const guessByRound: Record<number, (typeof myPredictions)[number]> = {};

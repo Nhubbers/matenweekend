@@ -155,24 +155,30 @@ export function GuessFormModal({
                         <label className="label p-0 mb-2">
                             <span className="label-text font-bold flex items-center gap-1.5">🎲 {nl.wagerPoints}</span>
                             <span className="label-text-alt text-xs font-semibold text-primary">
-                                Saldo: {userPoints} pts
+                                Saldo: {maxWager} pts
                             </span>
                         </label>
                         <div className="flex items-center gap-3">
                             <input
                                 type="range"
                                 min={0}
-                                max={Math.max(userPoints, 0)}
+                                max={maxWager}
                                 step={5}
-                                value={Math.min(wagerPoints, userPoints)}
+                                value={effectiveWager}
                                 onChange={(e) => setWagerPoints(Number(e.target.value))}
                                 className="range range-primary range-sm flex-1"
-                                disabled={userPoints <= 0}
+                                disabled={maxWager <= 0}
                             />
                             <div className="badge badge-primary font-mono font-bold text-sm px-3 py-3">
-                                {Math.min(wagerPoints, Math.max(userPoints, 0))} pts
+                                {effectiveWager} pts
                             </div>
                         </div>
+                        {maxWager <= 0 && (
+                            <div className="alert alert-info rounded-xl p-2 text-xs mt-2">
+                                ℹ️ Je hebt nu geen beschikbaar saldo. Je voorspelling wordt zonder inzet (0 pts)
+                                opgeslagen.
+                            </div>
+                        )}
                         {/* Multiplier info (collapsible) + compact potential payout */}
                         <div className="mt-3 space-y-2">
                             <button

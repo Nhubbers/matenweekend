@@ -29,6 +29,22 @@ export function clampWagerToAvailable(requestedWager: number, availablePoints: n
     return Math.min(Math.max(0, req), maxAllowedWager(availablePoints));
 }
 
+/**
+ * Sums raw point amounts into a finite total, ignoring missing/non-numeric values.
+ *
+ * PocketBase numbers can arrive as strings (or be missing entirely) in a stale cache
+ * payload, so a naive `sum + (value || 0)` can produce `NaN`. A `NaN` balance would
+ * silently propagate into the wager payload, and `JSON.stringify` turns `NaN` into
+ * `null` - which PocketBase rejects with `validation_required` ("Het veld
+ * wager_points is verplicht."). This helper guarantees a usable, finite total.
+ */
+export function sumPoints(values: unknown[]): number {
+    return values.reduce<number>((sum, value) => {
+        const amount = Number(value);
+        return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+}
+
 export function countCorrect(locationCorrect: boolean, guestCorrect: boolean): number {
     return (locationCorrect ? 1 : 0) + (guestCorrect ? 1 : 0);
 }

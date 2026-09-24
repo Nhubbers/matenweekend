@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
+import { sumPoints } from '@/lib/guessPayout';
 import type { PointTransaction, UserRanking } from '@/types';
 
 export function useRanking() {
-    const { data: rankings = [], isLoading: loading, error, refetch } = useQuery<UserRanking[]>({
+    const {
+        data: rankings = [],
+        isLoading: loading,
+        error,
+        refetch,
+    } = useQuery<UserRanking[]>({
         queryKey: ['rankings'],
         queryFn: async () => {
             // Fetch rankings directly from server-side aggregated view
@@ -36,7 +42,12 @@ export function useRanking() {
 }
 
 export function useUserTransactions(userId: string | undefined) {
-    const { data: transactions = [], isLoading: loading, error, refetch } = useQuery<PointTransaction[]>({
+    const {
+        data: transactions = [],
+        isLoading: loading,
+        error,
+        refetch,
+    } = useQuery<PointTransaction[]>({
         queryKey: ['transactions', userId],
         queryFn: async () => {
             if (!userId) return [];
@@ -49,7 +60,7 @@ export function useUserTransactions(userId: string | undefined) {
         enabled: !!userId,
     });
 
-    const totalPoints = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const totalPoints = sumPoints(transactions.map((tx) => tx.amount));
 
     return {
         transactions,

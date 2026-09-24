@@ -216,7 +216,7 @@ the logged-in user.
 | `round_number`       | number           | required                                                        |
 | `location_country`   | text             | required                                                        |
 | `mystery_guest_name` | text             | required                                                        |
-| `wager_points`       | number           | required, capped at the user's balance by the UI                |
+| `wager_points`       | number           | `min: 0`, **not** required - `0` = prediction without a wager   |
 | `submitted_at`       | date             |                                                                 |
 | `resolved`           | bool             | set to true by the admin payout flow to prevent double-awarding |
 | `awarded_points`     | number           | final payout recorded on resolution                             |
@@ -272,3 +272,11 @@ participant's **available balance** (settled `point_transactions` total minus
 already-pending unresolved wagers). This enforces at the database level what the
 UI caps on the wager slider, so a participant cannot wager the same points twice
 by calling the API directly.
+
+> ⚠️ `wager_points` must **not** be `required` in the collection schema. PocketBase
+> treats a _number_ field with `required: true` as "must be non-zero"
+> (`core/field_number.go`: _"Required will require the field value to be non-zero"_),
+> so a participant with 0 available saldo could not save a 0-point prediction - it
+> failed with `validation_required` → _"Het veld wager_points is verplicht."_.
+> Migration `1720000007_guesses_allow_zero_wager.js` clears the flag; `min: 0`
+> still forbids negative values and the column defaults to 0.

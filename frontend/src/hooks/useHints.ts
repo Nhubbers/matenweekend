@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pb } from '@/lib/pocketbase';
 import { detectMediaKind } from '@/lib/hintMedia';
+import { clampWagerToAvailable, sumPoints } from '@/lib/guessPayout';
 import type { Hint, RoundAnswer, Submission, User, UserGuess } from '@/types';
 
 /* -------------------------------------------------------------------------- */
@@ -133,11 +134,11 @@ async function getAvailableBalance(userId: string, excludeGuessId?: string): Pro
         }),
     ]);
 
-    const total = txs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-    const pendingWagers = pendingGuesses.reduce((sum, g) => {
-        if (g.id === excludeGuessId) return sum;
-        return sum + (g.wager_points || 0);
-    }, 0);
+    // `sumPoints` keeps the totals finite: a missing/non-numeric amount must never turn
+    // the balance (and therefore the wager payload) into `NaN`, which JSON.stringify
+    // would send as `null` and PocketBase would reject with "wager_points is verplicht".
+    const total = sumPoints(txs.map((tx) => tx.amount));
+    const pendingWagers = sumPoints(pendingGuesses.filter((g) => g.id !== excludeGuessId).map((g) => g.wager_points));
 
     return Math.max(0, total - pendingWagers);
 }
@@ -205,7 +206,7 @@ export function useHints() {
 
     // Points currently locked in unresolved wagers. A user's available balance is
     // totalPoints - pendingWagerPoints, so already-wagered points cannot be wagered twice.
-    const pendingWagerPoints = myGuesses.filter((g) => !g.resolved).reduce((sum, g) => sum + (g.wager_points ?? 0), 0);
+    const pendingWagerPoints = sumPoints(myGuesses.filter((g) => !g.resolved).map((g) => g.wager_points));
 
     // The user's submitted predictions across all rounds (mapped to domain objects).
     const myPredictions: UserGuess[] = myGuesses.map(toGuess);
@@ -235,15 +236,19 @@ export function useHints() {
         const existingGuessId = existing[0]?.id;
 
         const requestedWager = Math.floor(Number(guessData.wagerPoints) || 0);
-        if (!Number.isFinite(requestedWager) || requestedWager < 0) {
+        if (requestedWager < 0) {
             throw new Error('Inzet mag niet negatief zijn.');
         }
 
         const available = await getAvailableBalance(userId, existingGuessId);
         if (requestedWager > available) {
-            throw new Error(`Je kunt niet meer inzetten dan je saldo. Beschikbaar: ${Math.max(0, available)} pts.`);
+            throw new Error(`Je kunt niet meer inzetten dan je saldo. Beschikbaar: ${available} pts.`);
         }
-        const safeWager = Math.min(requestedWager, available);
+        // `clampWagerToAvailable` guarantees a FINITE, non-negative integer: a wager of
+        // 0 (no saldo available) is a valid, supported submission. Sending `NaN` would
+        // serialize to `null` in JSON and be rejected by PocketBase as
+        // "Het veld wager_points is verplicht.".
+        const safeWager = clampWagerToAvailable(requestedWager, available);
 
         const payload = {
             user: userId,

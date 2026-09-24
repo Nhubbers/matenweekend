@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_HINTS, EUROPEAN_COUNTRIES } from '../data/mockHints';
-import { calculatePayout, COMBO_BONUS, clampWagerToAvailable, maxAllowedWager } from '../lib/guessPayout';
+import { calculatePayout, COMBO_BONUS, clampWagerToAvailable, maxAllowedWager, sumPoints } from '../lib/guessPayout';
 import { detectMediaKind, detectFileMediaKind } from '../lib/hintMedia';
 
 describe('Hints Feature Data & Logic', () => {
@@ -124,5 +124,39 @@ describe('Wager vs saldo (fool-proof invariant)', () => {
     it('rounds available balance down so a fractional saldo cannot be over-wagered', () => {
         expect(maxAllowedWager(23.7)).toBe(23);
         expect(clampWagerToAvailable(99, 23.7)).toBe(23);
+    });
+
+    it('still allows a 0-point prediction when the participant has no saldo (regression)', () => {
+        // A participant with 0 saldo must be able to submit an answer with a 0 wager.
+        // PocketBase rejects the value 0 for a *number* field marked `required`
+        // ("Required will require the field value to be non-zero"), so `wager_points`
+        // is optional in the schema and the payload must simply carry 0.
+        const wager = clampWagerToAvailable(0, 0);
+        expect(wager).toBe(0);
+        expect(JSON.stringify({ wager_points: wager })).toBe('{"wager_points":0}');
+    });
+
+    it('never emits NaN/Infinity as the wager, even when the saldo is broken', () => {
+        // JSON.stringify turns NaN into null, which PocketBase rejects with
+        // "Het veld wager_points is verplicht." - so the wager must always be finite.
+        [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY].forEach((balance) => {
+            const wager = clampWagerToAvailable(50, balance);
+            expect(Number.isFinite(wager)).toBe(true);
+            expect(wager).toBe(0);
+        });
+    });
+});
+
+describe('sumPoints (finite point totals)', () => {
+    it('sums numeric amounts and numeric strings', () => {
+        expect(sumPoints([10, 5, -3])).toBe(12);
+        expect(sumPoints(['10', '5'])).toBe(15);
+    });
+
+    it('ignores missing/non-numeric values so a balance can never become NaN', () => {
+        expect(sumPoints([])).toBe(0);
+        expect(sumPoints([undefined, null, Number.NaN, 20])).toBe(20);
+        expect(sumPoints([Number.NaN])).toBe(0);
+        expect(Number.isFinite(sumPoints([{}, Number.POSITIVE_INFINITY]))).toBe(true);
     });
 });

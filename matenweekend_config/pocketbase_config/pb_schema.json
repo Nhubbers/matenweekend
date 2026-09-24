@@ -1628,7 +1628,7 @@
                 "name": "wager_points",
                 "onlyInt": true,
                 "presentable": false,
-                "required": true,
+                "required": false,
                 "system": false,
                 "type": "number"
             },
