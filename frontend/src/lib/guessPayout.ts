@@ -4,10 +4,36 @@
 /** Bonus awarded only on the FINAL round when BOTH answers are correct. */
 export const COMBO_BONUS = 50;
 
-/** Wager multiplier applied when BOTH answers are correct. */
+export interface RoundMultiplier {
+    both: number;
+    one: number;
+}
+
+/**
+ * Multipliers applied to wagered points based on the hint round:
+ * Earlier rounds carry higher multipliers due to greater uncertainty.
+ */
+export const ROUND_MULTIPLIERS: Record<number, RoundMultiplier> = {
+    1: { both: 4.0, one: 1.75 },
+    2: { both: 3.0, one: 1.5 },
+    3: { both: 2.5, one: 1.25 },
+    4: { both: 2.0, one: 1.1 },
+    5: { both: 1.5, one: 1.0 },
+};
+
+export const DEFAULT_ROUND_MULTIPLIER: RoundMultiplier = { both: 1.5, one: 1.0 };
+
+export function getRoundMultiplier(roundNumber?: number): RoundMultiplier {
+    if (!roundNumber || !(roundNumber in ROUND_MULTIPLIERS)) {
+        return DEFAULT_ROUND_MULTIPLIER;
+    }
+    return ROUND_MULTIPLIERS[roundNumber];
+}
+
+/** Fallback wager multiplier applied when BOTH answers are correct (legacy). */
 export const MULTIPLIER_BOTH_CORRECT = 3;
 
-/** Wager multiplier applied when exactly ONE answer is correct. */
+/** Fallback wager multiplier applied when exactly ONE answer is correct (legacy). */
 export const MULTIPLIER_ONE_CORRECT = 1.5;
 
 /**
@@ -56,12 +82,12 @@ export function isGuessCorrect(locationCorrect: boolean, guestCorrect: boolean):
 /**
  * Calculates the final payout for a submitted guess.
  *
- * The base points are ONLY earned when BOTH answers are correct. The x1.5 / x3
- * multiplier applies ONLY to the WAGERED points (the amount taken from the
- * participant's point balance), never to the base.
+ * The base points are ONLY earned when BOTH answers are correct. The round multiplier
+ * applies ONLY to the WAGERED points (the amount taken from the participant's point balance),
+ * never to the base.
  *
- * - Both correct:  Base + Wager * 3 (plus the 50pt Combo Bonus on the final round)
- * - One correct:   Wager * 1.5 (NO base points)
+ * - Both correct:  Base + Wager * roundMultiplier.both (plus the 50pt Combo Bonus on the final round)
+ * - One correct:   Wager * roundMultiplier.one (NO base points)
  * - Both wrong:    -Wager (the participant loses all of their wagered points)
  */
 export function calculatePayout(
@@ -69,15 +95,18 @@ export function calculatePayout(
     wagerPoints: number,
     locationCorrect: boolean,
     guestCorrect: boolean,
-    isFinalRound: boolean
+    isFinalRound: boolean,
+    roundNumber?: number
 ): number {
     const correct = countCorrect(locationCorrect, guestCorrect);
+    const effectiveRound = roundNumber ?? (isFinalRound ? 5 : 1);
+    const multiplier = getRoundMultiplier(effectiveRound);
 
     if (correct === 2) {
-        return basePoints + wagerPoints * MULTIPLIER_BOTH_CORRECT + (isFinalRound ? COMBO_BONUS : 0);
+        return basePoints + wagerPoints * multiplier.both + (isFinalRound ? COMBO_BONUS : 0);
     }
     if (correct === 1) {
-        return wagerPoints * MULTIPLIER_ONE_CORRECT;
+        return wagerPoints * multiplier.one;
     }
     return -wagerPoints;
 }

@@ -148,15 +148,16 @@ export function AdminHintsManager() {
                     sub.locationCountry.trim().toLowerCase() === answer.country.trim().toLowerCase();
                 const guestCorrect = sub.mysteryGuestName.trim().toLowerCase() === answer.guest.trim().toLowerCase();
 
-                // Base points are always earned when at least one answer is correct;
-                // the x1.5 / x3 multiplier applies ONLY to the wagered points.
+                // Base points are only earned when both answers are correct;
+                // the per-round multiplier applies ONLY to the wagered points.
                 // The +50 combo bonus only applies on the final round.
                 const payout = calculatePayout(
                     basePoints,
                     sub.wagerPoints,
                     locationCorrect,
                     guestCorrect,
-                    isFinalRound
+                    isFinalRound,
+                    sub.roundNumber
                 );
 
                 // Record the payout (win or loss); skip only when it nets to zero.

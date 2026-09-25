@@ -3,7 +3,7 @@ import { EUROPEAN_COUNTRIES } from '@/data/mockHints';
 import { nl } from '@/lib/translations';
 import { useToast } from '@/contexts/ToastContext';
 import { ConfirmDialog } from '@/components/common';
-import { calculatePayout, clampWagerToAvailable, maxAllowedWager } from '@/lib/guessPayout';
+import { calculatePayout, clampWagerToAvailable, getRoundMultiplier, maxAllowedWager } from '@/lib/guessPayout';
 import { getErrorMessage } from '@/lib/errors';
 import type { UserGuess } from '@/types';
 
@@ -55,8 +55,23 @@ export function GuessFormModal({
     // Live potential payout based on the current wager (multiplier applies only to wagered points).
     const maxWager = maxAllowedWager(userPoints);
     const effectiveWager = clampWagerToAvailable(wagerPoints, maxWager);
-    const potentialOneCorrect = calculatePayout(basePoints, effectiveWager, true, false, isFinalRound);
-    const potentialBothCorrect = calculatePayout(basePoints, effectiveWager, true, true, isFinalRound);
+    const currentMultiplier = getRoundMultiplier(activeRoundNumber);
+    const potentialOneCorrect = calculatePayout(
+        basePoints,
+        effectiveWager,
+        true,
+        false,
+        isFinalRound,
+        activeRoundNumber
+    );
+    const potentialBothCorrect = calculatePayout(
+        basePoints,
+        effectiveWager,
+        true,
+        true,
+        isFinalRound,
+        activeRoundNumber
+    );
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -192,23 +207,35 @@ export function GuessFormModal({
 
                             {showInfo && (
                                 <p className="text-[11px] text-base-content/60 leading-relaxed p-2 rounded-lg border border-base-300 bg-base-100">
-                                    Je zet punten in vanuit je saldo. De vermenigvuldiger geldt alleen op je ingezette
-                                    punten en nooit op de base punten. Alleen bij 2 goede antwoorden krijg je de
-                                    volledige base punten ({basePoints} pts) erbovenop. ❌ 0 goed: je verliest je inzet
-                                    ({effectiveWager} pts).
+                                    Je zet punten in vanuit je saldo. Vermenigvuldiger ronde #{activeRoundNumber}:{' '}
+                                    <strong className="text-success">{currentMultiplier.both}x</strong> bij 2 goed en{' '}
+                                    <strong className="text-secondary">{currentMultiplier.one}x</strong> bij 1 goed. De
+                                    multiplier geldt alleen op je inzet en niet op de base punten. Alleen bij 2 goede
+                                    antwoorden krijg je de base punten ({basePoints} pts) erbovenop. ❌ 0 goed: je
+                                    verliest je inzet ({effectiveWager} pts).
                                     {isFinalRound ? ' 🏆 +50 Combo bonus bij 2 goed (finale ronde)!' : ''}
                                 </p>
                             )}
 
                             <div className="flex items-center gap-2">
-                                <span className="badge badge-ghost badge-sm gap-1.5 px-2" title="1 antwoord goed">
-                                    <span className="text-[11px] text-secondary font-semibold">1 goed</span>
+                                <span
+                                    className="badge badge-ghost badge-sm gap-1.5 px-2"
+                                    title={`1 antwoord goed (${currentMultiplier.one}x)`}
+                                >
+                                    <span className="text-[11px] text-secondary font-semibold">
+                                        1 goed ({currentMultiplier.one}x)
+                                    </span>
                                     <span className="font-mono text-[11px] font-bold text-secondary">
                                         +{potentialOneCorrect}
                                     </span>
                                 </span>
-                                <span className="badge badge-ghost badge-sm gap-1.5 px-2" title="2 antwoorden goed">
-                                    <span className="text-[11px] text-success font-semibold">2 goed</span>
+                                <span
+                                    className="badge badge-ghost badge-sm gap-1.5 px-2"
+                                    title={`2 antwoorden goed (${currentMultiplier.both}x)`}
+                                >
+                                    <span className="text-[11px] text-success font-semibold">
+                                        2 goed ({currentMultiplier.both}x)
+                                    </span>
                                     <span className="font-mono text-[11px] font-bold text-success">
                                         +{potentialBothCorrect}
                                     </span>

@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_HINTS, EUROPEAN_COUNTRIES } from '../data/mockHints';
-import { calculatePayout, COMBO_BONUS, clampWagerToAvailable, maxAllowedWager, sumPoints } from '../lib/guessPayout';
+import {
+    calculatePayout,
+    COMBO_BONUS,
+    ROUND_MULTIPLIERS,
+    getRoundMultiplier,
+    clampWagerToAvailable,
+    maxAllowedWager,
+    sumPoints,
+} from '../lib/guessPayout';
 import { detectMediaKind, detectFileMediaKind } from '../lib/hintMedia';
 
 describe('Hints Feature Data & Logic', () => {
@@ -34,35 +42,66 @@ describe('Hints Feature Data & Logic', () => {
     });
 });
 
-describe('Guess Payout Calculation', () => {
-    it('awards full Base + (Wager * 3) when both answers are correct (non-final round)', () => {
-        expect(calculatePayout(75, 20, true, true, false)).toBe(75 + 20 * 3);
+describe('Round Multipliers Configuration', () => {
+    it('defines the correct multiplier schedule for all 5 rounds', () => {
+        expect(ROUND_MULTIPLIERS[1]).toEqual({ both: 4.0, one: 1.75 });
+        expect(ROUND_MULTIPLIERS[2]).toEqual({ both: 3.0, one: 1.5 });
+        expect(ROUND_MULTIPLIERS[3]).toEqual({ both: 2.5, one: 1.25 });
+        expect(ROUND_MULTIPLIERS[4]).toEqual({ both: 2.0, one: 1.1 });
+        expect(ROUND_MULTIPLIERS[5]).toEqual({ both: 1.5, one: 1.0 });
     });
 
-    it('awards full Base + (Wager * 3) plus the 50pt combo bonus on the final round when both are correct', () => {
-        expect(calculatePayout(75, 20, true, true, true)).toBe(75 + 20 * 3 + COMBO_BONUS);
+    it('getRoundMultiplier falls back to round 5 / default for unknown rounds', () => {
+        expect(getRoundMultiplier(99)).toEqual({ both: 1.5, one: 1.0 });
+        expect(getRoundMultiplier(undefined)).toEqual({ both: 1.5, one: 1.0 });
+    });
+});
+
+describe('Guess Payout Calculation per Round', () => {
+    it('Round 1 applies 4.0x for both correct and 1.75x for one correct', () => {
+        // Both correct: Base (75) + 20 * 4.0
+        expect(calculatePayout(75, 20, true, true, false, 1)).toBe(75 + 20 * 4.0);
+        // One correct: 20 * 1.75 (no base)
+        expect(calculatePayout(75, 20, true, false, false, 1)).toBe(20 * 1.75);
+        expect(calculatePayout(75, 20, false, true, false, 1)).toBe(20 * 1.75);
     });
 
-    it('awards only (Wager * 1.5) and NO base when exactly one answer is correct', () => {
-        expect(calculatePayout(75, 20, true, false, false)).toBe(20 * 1.5);
-        expect(calculatePayout(75, 20, false, true, false)).toBe(20 * 1.5);
+    it('Round 2 applies 3.0x for both correct and 1.50x for one correct', () => {
+        expect(calculatePayout(60, 20, true, true, false, 2)).toBe(60 + 20 * 3.0);
+        expect(calculatePayout(60, 20, true, false, false, 2)).toBe(20 * 1.5);
+    });
+
+    it('Round 3 applies 2.5x for both correct and 1.25x for one correct', () => {
+        expect(calculatePayout(45, 20, true, true, false, 3)).toBe(45 + 20 * 2.5);
+        expect(calculatePayout(45, 20, true, false, false, 3)).toBe(20 * 1.25);
+    });
+
+    it('Round 4 applies 2.0x for both correct and 1.10x for one correct', () => {
+        expect(calculatePayout(30, 20, true, true, false, 4)).toBe(30 + 20 * 2.0);
+        expect(calculatePayout(30, 20, true, false, false, 4)).toBe(20 * 1.1);
+    });
+
+    it('Round 5 applies 1.5x for both correct (+50 combo) and 1.00x (break-even) for one correct', () => {
+        expect(calculatePayout(15, 20, true, true, true, 5)).toBe(15 + 20 * 1.5 + COMBO_BONUS);
+        expect(calculatePayout(15, 20, true, false, true, 5)).toBe(20 * 1.0);
     });
 
     it('makes the participant lose all wagered points (and no base) when both answers are wrong', () => {
-        expect(calculatePayout(75, 20, false, false, false)).toBe(-20);
+        expect(calculatePayout(75, 20, false, false, false, 1)).toBe(-20);
+        expect(calculatePayout(15, 20, false, false, true, 5)).toBe(-20);
     });
 
     it('never applies the combo bonus outside the final round', () => {
-        expect(calculatePayout(10, 10, true, true, false)).toBe(10 + 10 * 3); // no +50
-        expect(calculatePayout(10, 10, true, true, true)).toBe(10 + 10 * 3 + COMBO_BONUS); // +50
+        expect(calculatePayout(10, 10, true, true, false, 5)).toBe(10 + 10 * 1.5); // no +50
+        expect(calculatePayout(10, 10, true, true, true, 5)).toBe(10 + 10 * 1.5 + COMBO_BONUS); // +50
     });
 
     it('the multiplier only scales the wagered points, never the base', () => {
-        // base stays flat (10) regardless of the wager multiplier
-        expect(calculatePayout(10, 10, true, true, false)).toBe(10 + 10 * 3);
-        expect(calculatePayout(10, 20, true, true, false)).toBe(10 + 20 * 3);
+        // base stays flat (10) regardless of the wager amount
+        expect(calculatePayout(10, 10, true, true, false, 1)).toBe(10 + 10 * 4.0);
+        expect(calculatePayout(10, 20, true, true, false, 1)).toBe(10 + 20 * 4.0);
         // one correct -> no base, only the wagered points scaled
-        expect(calculatePayout(10, 10, true, false, false)).toBe(10 * 1.5);
+        expect(calculatePayout(10, 10, true, false, false, 1)).toBe(10 * 1.75);
     });
 });
 
